@@ -162,6 +162,9 @@ where
     // actually performs the update
     // returns wether this update changed anything
     pub fn execute_changes(&mut self, update: TreeUpdate<C, L>) {
+
+		assert_eq!(update.to_add_parent_indices.len(), update.chunks_to_add.len());
+
         // first, activate any chunks needed
         for index in update.to_activate_indices {
             self.chunks[self.nodes[index].chunk].chunk.set_active(true);
