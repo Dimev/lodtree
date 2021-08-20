@@ -7,6 +7,9 @@ pub use traits::*;
 use std::collections::VecDeque;
 use std::num::NonZeroUsize;
 
+// TODO: docs, examples
+// Also, iterator that borrows the Tree and loops over all chunks
+
 // struct for keeping track of chunks
 // keeps track of the parent and child indices
 #[derive(Copy, Clone, Debug, Default)]
