@@ -326,3 +326,26 @@ where
         Self::empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    struct TestChunk;
+
+    impl Chunk for TestChunk {
+        type Lod = QuadVec;
+
+        fn set_active(&mut self, _active: bool) {}
+    }
+
+    #[test]
+    fn new_octree() {
+        let mut tree = Tree::<TestChunk, QuadVec>::new();
+
+        let changes = tree.get_pending_changes(&[QuadVec::new(2, 2, 8)], 2, 16);
+
+        tree.execute_changes(changes);
+    }
+}
