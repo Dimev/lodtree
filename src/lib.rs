@@ -272,6 +272,7 @@ where
 // Tree update state
 // holds state of what needs to be generated for the update, and things needed to perform the update with minimal work
 // also takes in a list of all chunks that will be added during the update, which is generated elsewhere
+// TODO: make this part of the tree, to easily allow reuse of allocations
 #[derive(Clone, Debug)]
 pub struct TreeUpdate<C, L>
 where
