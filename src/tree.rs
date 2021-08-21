@@ -260,7 +260,7 @@ where
                 .any(|x| x.can_subdivide(current_position, detail));
 
             // if we can subdivide, and the current node does not have children, subdivide the current node
-            if can_subdivide && current_node.children == None {
+            if can_subdivide && current_node.children.is_none() {
                 // add children to be added
                 for i in 0..L::num_children() {
                     // add the new chunk to be added
@@ -280,7 +280,7 @@ where
                 if !can_subdivide
                     && !(0..L::num_children())
                         .into_iter()
-                        .any(|i| self.nodes[i + index.get()].children != None)
+                        .any(|i| self.nodes[i + index.get()].children.is_some())
                 {
                     // first, queue ourselves for activation
                     self.chunks_to_activate.push(current_node_index);

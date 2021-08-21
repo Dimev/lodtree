@@ -47,7 +47,7 @@ fn main() {
 				.for_each(|(position, chunk)| {
 
 					// and run expensive init
-					chunk.expensive_init(*position)
+					chunk.expensive_init(*position);
 				});
 
 			// and make all chunks visible or not
