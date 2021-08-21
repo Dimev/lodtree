@@ -3,10 +3,10 @@ use crate::traits::LodVec;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct QuadVec {
     /// x position in the quadtree
-    pub x: u64,
+    pub x: i64,
 
     /// y position in the quadtree
-    pub y: u64,
+    pub y: i64,
 
     /// lod depth in the quadtree
     /// this is limited, hence we use u8
@@ -15,7 +15,7 @@ pub struct QuadVec {
 
 impl QuadVec {
     #[inline]
-    pub fn new(x: u64, y: u64, depth: u8) -> Self {
+    pub fn new(x: i64, y: i64, depth: u8) -> Self {
         Self { x, y, depth }
     }
 }
@@ -62,19 +62,19 @@ impl LodVec for QuadVec {
 
         // minimum corner of the bounding box
         let min = (
-            (node.x << (level_difference + 1)) - ((detail + 1) << level_difference)
+            (node.x << (level_difference + 1)) - ((detail + 1) << level_difference) as i64
                 + (1 << level_difference),
-            (node.y << (level_difference + 1)) - ((detail + 1) << level_difference)
+            (node.y << (level_difference + 1)) - ((detail + 1) << level_difference) as i64
                 + (1 << level_difference),
         );
 
         // max as well
         let max = (
             (node.x << (level_difference + 1))
-                + ((detail + 1) << level_difference)
+                + ((detail + 1) << level_difference) as i64
                 + (1 << level_difference),
             (node.y << (level_difference + 1))
-                + ((detail + 1) << level_difference)
+                + ((detail + 1) << level_difference) as i64
                 + (1 << level_difference),
         );
 

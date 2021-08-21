@@ -14,11 +14,3 @@ pub trait LodVec: Sized + Copy + Clone + Send + Sync + Default {
     /// assumes self is the target position for a lod
     fn can_subdivide(self, node: Self, detail: u64, max_lod_levels: u64) -> bool;
 }
-
-/// struct representing a chunk
-pub trait Chunk: Sized {
-    type Lod: LodVec;
-
-    /// sets the current chunk to be active, which is visible, or inactive, which is invisible
-    fn set_active(&mut self, active: bool);
-}
