@@ -10,7 +10,8 @@ pub trait LodVec: Sized + Copy + Clone + Send + Sync + Default {
     /// returns the lod vector as if it's at the root
     fn root() -> Self;
 
-    /// wether the node can subdivide, compared to another node and the required detail, and maximum number of lod levels
+    /// wether the node can subdivide, compared to another node and the required detail
     /// assumes self is the target position for a lod
-    fn can_subdivide(self, node: Self, detail: u64, max_lod_levels: u64) -> bool;
+    /// the depth determines the max lod level allowed, detail determines the amount of chunks around the target
+    fn can_subdivide(self, node: Self, detail: u64) -> bool;
 }

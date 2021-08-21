@@ -3,10 +3,10 @@ use crate::traits::LodVec;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct QuadVec {
     /// x position in the quadtree
-    pub x: i64,
+    pub x: u64,
 
     /// y position in the quadtree
-    pub y: i64,
+    pub y: u64,
 
     /// lod depth in the quadtree
     /// this is limited, hence we use u8
@@ -15,7 +15,7 @@ pub struct QuadVec {
 
 impl QuadVec {
     #[inline]
-    pub fn new(x: i64, y: i64, depth: u8) -> Self {
+    pub fn new(x: u64, y: u64, depth: u8) -> Self {
         Self { x, y, depth }
     }
 }
@@ -47,13 +47,9 @@ impl LodVec for QuadVec {
     }
 
     #[inline]
-    fn can_subdivide(self, node: Self, detail: u64, max_lod_levels: u64) -> bool {
-        // this was a pain to get right
+    fn can_subdivide(self, node: Self, detail: u64) -> bool {
         // return early if the level of this chunk is too high
         if node.depth >= self.depth {
-            return false;
-        }
-        if node.depth as u64 >= max_lod_levels {
             return false;
         }
 
@@ -62,23 +58,25 @@ impl LodVec for QuadVec {
 
         // minimum corner of the bounding box
         let min = (
-            (node.x << (level_difference + 1)) - ((detail + 1) << level_difference) as i64
-                + (1 << level_difference),
-            (node.y << (level_difference + 1)) - ((detail + 1) << level_difference) as i64
-                + (1 << level_difference),
+            (node.x << (level_difference + 1)).saturating_sub(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.y << (level_difference + 1)).saturating_sub(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
         );
 
         // max as well
         let max = (
-            (node.x << (level_difference + 1))
-                + ((detail + 1) << level_difference) as i64
-                + (1 << level_difference),
-            (node.y << (level_difference + 1))
-                + ((detail + 1) << level_difference) as i64
-                + (1 << level_difference),
+            (node.x << (level_difference + 1)).saturating_add(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.y << (level_difference + 1)).saturating_add(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
         );
 
-        // local position of the target
+        // local position of the target, which is one lod level higher to allow more detail
         let local = (self.x << 1, self.y << 1);
 
         // check if the target is inside of the bounding box
@@ -112,7 +110,7 @@ impl OctVec {
 impl LodVec for OctVec {
     #[inline]
     fn num_children() -> usize {
-        4
+        8
     }
 
     #[inline]
@@ -161,13 +159,9 @@ impl LodVec for OctVec {
     }
 
     #[inline]
-    fn can_subdivide(self, node: Self, detail: u64, max_lod_levels: u64) -> bool {
-        // this was a pain to get right
+    fn can_subdivide(self, node: Self, detail: u64) -> bool {
         // return early if the level of this chunk is too high
         if node.depth >= self.depth {
-            return false;
-        }
-        if node.depth as u64 >= max_lod_levels {
             return false;
         }
 
@@ -176,25 +170,28 @@ impl LodVec for OctVec {
 
         // minimum corner of the bounding box
         let min = (
-            (node.x << (level_difference + 1)) - ((detail + 1) << level_difference)
-                + (1 << level_difference),
-            (node.y << (level_difference + 1)) - ((detail + 1) << level_difference)
-                + (1 << level_difference),
-            (node.z << (level_difference + 1)) - ((detail + 1) << level_difference)
-                + (1 << level_difference),
+            (node.x << (level_difference + 1)).saturating_sub(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.y << (level_difference + 1)).saturating_sub(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.z << (level_difference + 1)).saturating_sub(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
         );
 
         // max as well
         let max = (
-            (node.x << (level_difference + 1))
-                + ((detail + 1) << level_difference)
-                + (1 << level_difference),
-            (node.y << (level_difference + 1))
-                + ((detail + 1) << level_difference)
-                + (1 << level_difference),
-            (node.z << (level_difference + 1))
-                + ((detail + 1) << level_difference)
-                + (1 << level_difference),
+            (node.x << (level_difference + 1)).saturating_add(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.y << (level_difference + 1)).saturating_add(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
+            (node.z << (level_difference + 1)).saturating_add(
+                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+            ),
         );
 
         // local position of the target

@@ -65,11 +65,10 @@ where
 
     /// internal queue for processing, that way we won't need to reallocate it
     processing_queue: Vec<(L, usize)>,
-    //pub to_add: Vec<L>,            // positions of the chunks being added
-    //pub chunks_to_add: Vec<C>, // chunks that are added. These will be used in the Tree for rendering
+    // TODO: add a special array for chunks that are in bounds, to help doing editing
 }
 
-impl<C, L> Tree<C, L>
+impl<'a, C, L> Tree<C, L>
 where
     C: Sized,
     L: LodVec,
@@ -87,6 +86,11 @@ where
             free_list: VecDeque::with_capacity(512),
             processing_queue: Vec::with_capacity(512),
         }
+    }
+
+    // get the number of chunks
+    pub fn get_num_chunks(&self) -> usize {
+        self.chunks.len()
     }
 
     // traverse the tree and figure out what needs to happen to which chunks
@@ -110,7 +114,6 @@ where
         &mut self,
         targets: &[L],
         detail: u64,
-        max_levels: u64,
         chunk_creator: fn(L) -> C,
     ) -> bool {
         // first, clear the previous arrays
@@ -143,7 +146,7 @@ where
             // wether we can subdivide
             let can_subdivide = targets
                 .iter()
-                .any(|x| x.can_subdivide(current_position, detail, max_levels));
+                .any(|x| x.can_subdivide(current_position, detail));
 
             // if we can subdivide, and the current node does not have children, subdivide the current node
             if can_subdivide && current_node.children == None {
@@ -158,21 +161,6 @@ where
 
                     // and add ourselves for deactivation
                     self.chunks_to_deactivate.push(current_node_index);
-
-                    /*
-                    // add the position. No need to do this in reverse, as we'll use a VecDeque to go over free indices in order
-                    pending_update.to_add.push(current_position.get_child(i));
-
-                    // and add the current node index, so we can set it's children later on
-                    pending_update
-                        .to_add_parent_indices
-                        .push(current_node_index);
-
-                    // and queue ourselves for deactivation
-                    pending_update
-                        .to_deactivate_indices
-                        .push(current_node_index);
-                    */
                 }
             } else if let Some(index) = current_node.children {
                 // otherwise, if we cant subdivide and don't have a root as children, remove our children
@@ -302,73 +290,6 @@ where
     }
 }
 
-/*
-// Tree update state
-// holds state of what needs to be generated for the update, and things needed to perform the update with minimal work
-// also takes in a list of all chunks that will be added during the update, which is generated elsewhere
-// TODO: make this part of the tree, to easily allow reuse of allocations
-#[derive(Clone, Debug)]
-pub struct TreeUpdate<C, L>
-where
-    C: Chunk<Lod = L>,
-    L: LodVec,
-{
-    to_add_parent_indices: Vec<usize>, // and the chunks that are the parent of the chunk that's going to be added
-    to_remove_indices: Vec<usize>, // what chunks are going to be removed (indices of that chunk)
-    to_remove_parent_indices: Vec<usize>, // indices of the parent nodes when removing
-    to_activate_indices: Vec<usize>, // what chunks are going to be activated
-    to_deactivate_indices: Vec<usize>, // and deactivated
-    pub to_add: Vec<L>,            // positions of the chunks being added
-    pub chunks_to_add: Vec<C>, // chunks that are added. These will be used in the Tree for rendering
-                               // chunks that need to be updated
-                               // indices of the chunks that need to be updated
-}
-
-impl<C, L> TreeUpdate<C, L>
-where
-    C: Chunk<Lod = L>,
-    L: LodVec,
-{
-    fn empty() -> Self {
-        Self {
-            to_add: Vec::new(),
-            to_add_parent_indices: Vec::new(),
-            to_remove_indices: Vec::new(),
-            to_remove_parent_indices: Vec::new(),
-            to_activate_indices: Vec::new(),
-            to_deactivate_indices: Vec::new(),
-            chunks_to_add: Vec::new(),
-        }
-    }
-
-    fn no_root() -> Self {
-        Self {
-            to_add: vec![L::root()],
-            to_add_parent_indices: vec![0],
-            to_remove_indices: Vec::new(),
-            to_remove_parent_indices: Vec::new(),
-            to_activate_indices: Vec::new(),
-            to_deactivate_indices: Vec::new(),
-            chunks_to_add: Vec::new(),
-        }
-    }
-
-    pub fn did_anything(&self) -> bool {
-        !self.to_add.is_empty() || !self.to_remove_indices.is_empty()
-    }
-}
-
-impl<C, L> Default for TreeUpdate<C, L>
-where
-    C: Chunk<Lod = L>,
-    L: LodVec,
-{
-    fn default() -> Self {
-        Self::empty()
-    }
-}
-*/
-
 #[cfg(test)]
 mod tests {
 
@@ -377,12 +298,33 @@ mod tests {
     struct TestChunk;
 
     #[test]
-    fn new_octree() {
+    fn new_tree() {
         // make a tree
         let mut tree = Tree::<TestChunk, QuadVec>::new();
 
         // as long as we need to update, do so
-        while tree.prepare_update(&[QuadVec::new(2, 2, 8)], 2, 16, |_| TestChunk {}) {
+        while tree.prepare_update(&[QuadVec::new(128, 128, 32)], 8, |_| TestChunk {}) {
+            // and actually update
+            tree.do_update();
+        }
+
+        // and make the tree have no items
+        while tree.prepare_update(&[], 8, |_| TestChunk {}) {
+            // and actually update
+            tree.do_update();
+        }
+
+        // and do the same for an octree
+        let mut tree = Tree::<TestChunk, OctVec>::new();
+
+        // as long as we need to update, do so
+        while tree.prepare_update(&[OctVec::new(128, 128, 128, 32)], 8, |_| TestChunk {}) {
+            // and actually update
+            tree.do_update();
+        }
+
+        // and make the tree have no items
+        while tree.prepare_update(&[], 8, |_| TestChunk {}) {
             // and actually update
             tree.do_update();
         }
