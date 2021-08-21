@@ -49,8 +49,11 @@ where
     free_list: VecDeque<usize>,
 
     /// parent chunk indices of the chunks to be added
-    /// tuple of the parent index, the position, and the chunk
-    chunks_to_add: Vec<(usize, L, C)>,
+    /// tuple of the parent index and the position
+    chunks_to_add_parent: Vec<usize>,
+
+	/// actual chunk to add
+	chunks_to_add: Vec<(L, C)>,
 
     /// chunk indices to be removed, tuple of index, parent index
     chunks_to_remove: Vec<(usize, usize)>,
@@ -75,6 +78,7 @@ where
         // make a new Tree
         // also allocate some room for nodes
         Self {
+			chunks_to_add_parent: Vec::with_capacity(512),
             chunks_to_add: Vec::with_capacity(512),
             chunks_to_remove: Vec::with_capacity(512),
             chunks_to_activate: Vec::with_capacity(512),
@@ -87,44 +91,112 @@ where
     }
 
     /// get the number of chunks in the tree
+	#[inline]
     pub fn get_num_chunks(&self) -> usize {
         self.chunks.len()
     }
 
 	/// get a chunk
+	#[inline]
 	pub fn get_chunk(&self, index: usize) -> &C {
 		&self.chunks[index].chunk
 	}
 
 	/// get a chunk as mutable
+	#[inline]
 	pub fn get_chunk_mut(&mut self, index: usize) -> &mut C {
 		&mut self.chunks[index].chunk
 	}
 
-	// TODO
-	// get the number of chunks pending activation
+	/// get the number of chunks pending activation
+	#[inline]
+	pub fn get_num_chunks_to_activate(&self) -> usize {
+		self.chunks_to_activate.len()
+	}
 
-	// get a chunk pending activation
+	/// get a chunk pending activation
+	#[inline]
+	pub fn get_chunk_to_activate(&self, index: usize) -> &C {
+		&self.chunks[self.chunks_to_activate[index]].chunk
+	}
 
-	// get a mutable chunk pending activation
+	/// get a mutable chunk pending activation
+	#[inline]
+	pub fn get_chunk_to_activate_mut(&mut self, index: usize) -> &mut C {
+		&mut self.chunks[self.chunks_to_activate[index]].chunk
+	}
 
-	// get the number of chunks pending deactivation
+	/// get the number of chunks pending deactivation
+	#[inline]
+	pub fn get_num_chunks_to_deactivate(&self) -> usize {
+		self.chunks_to_deactivate.len()
+	}
 
-	// get a chunk pending deactivation
+	/// get a chunk pending deactivation
+	#[inline]
+	pub fn get_chunk_to_deactivate(&mut self, index: usize) -> &C {
+		&self.chunks[self.chunks_to_deactivate[index]].chunk
+	}
 
-	// get a mutable chunk pending deactivation
+	/// get a mutable chunk pending deactivation
+	#[inline]
+	pub fn get_chunk_to_deactivate_mut(&mut self, index: usize) -> &mut C {
+		&mut self.chunks[self.chunks_to_deactivate[index]].chunk
+	}
 
-	// get the number of chunks pending removal
+	/// get the number of chunks pending removal
+	#[inline]
+	pub fn get_num_chunks_to_remove(&self) -> usize {
+		self.chunks_to_remove.len()
+	}
 
-	// get a chunk pending removal
+	/// get a chunk pending removal
+	#[inline]
+	pub fn get_chunk_to_remove(&self, index: usize) -> &C {
+		&self.chunks[self.chunks_to_remove[index].0].chunk
+	}
 
-	// get a mutable chunk pending removal
+	/// get a mutable chunk pending removal
+	#[inline]
+	pub fn get_chunk_to_remove_mut(&mut self, index: usize) -> &mut C {
+		&mut self.chunks[self.chunks_to_remove[index].0].chunk
+	}
 
-	// get the number of chunks to be added
+	/// get the number of chunks to be added
+	#[inline]
+	pub fn get_num_chunks_to_add(&self) -> usize {
+		self.chunks_to_add.len()
+	}
+	
+	/// get the position of a chunk that's going to be added
+	#[inline]
+	pub fn get_position_of_chunk_to_add(&self, index: usize) -> L {
+		self.chunks_to_add[index].0
+	}
 
-	// get a chunk and it's position that's going to be added
+	/// get a chunk that's going to be added
+	#[inline]
+	pub fn get_chunk_to_add(&self, index: usize) -> &C {
+		&self.chunks_to_add[index].1
+	}
 
-	// get a mutable chunk and it's position that's going to be added
+	/// get a mutable chunk that's going to be added
+	#[inline]
+	pub fn get_chunk_to_add_mut(&mut self, index: usize) -> &mut C {
+		&mut self.chunks_to_add[index].1
+	}
+
+	/// gets the positions and chunks to be added as a slice
+	#[inline]
+	pub fn get_chunks_to_add_slice(&self) -> & [(L, C)] {
+		&self.chunks_to_add[..]
+	}
+
+	/// gets the positions and chunks to be added as a mutable slice
+	#[inline]
+	pub fn get_chunks_to_add_slice_mut(&mut self) -> &mut [(L, C)] {
+		&mut self.chunks_to_add[..]
+	}
 
     // how it works:
     // each node contains a pointer to it's chunk data and first child
@@ -162,7 +234,10 @@ where
         if self.nodes.is_empty() {
             // we need to add the root as pending
             self.chunks_to_add
-                .push((0, L::root(), chunk_creator(L::root())));
+                .push((L::root(), chunk_creator(L::root())));
+			
+				// and the parent
+				self.chunks_to_add_parent.push(0);
 
             // and an update is needed
             return true;
@@ -190,10 +265,12 @@ where
                 for i in 0..L::num_children() {
                     // add the new chunk to be added
                     self.chunks_to_add.push((
-                        current_node_index,
                         current_position.get_child(i),
                         chunk_creator(current_position.get_child(i)),
                     ));
+
+					// and add the parent
+					self.chunks_to_add_parent.push(current_node_index);
 
                     // and add ourselves for deactivation
                     self.chunks_to_deactivate.push(current_node_index);
@@ -253,7 +330,7 @@ where
 
         // add new chunks
         // we'll drain the vector here as well, as we won't need it anymore afterward
-        for (parent_index, _, chunk) in self.chunks_to_add.drain(..) {
+        for (parent_index, (_, chunk)) in self.chunks_to_add_parent.drain(..).zip(self.chunks_to_add.drain(..)) {
             // add the node
             let new_node_index = match self.free_list.pop_front() {
                 Some(x) => {

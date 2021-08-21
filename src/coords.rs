@@ -60,20 +60,20 @@ impl LodVec for QuadVec {
         // minimum corner of the bounding box
         let min = (
             (node.x << (level_difference + 1)).saturating_sub(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) - (1 << level_difference),
             ),
             (node.y << (level_difference + 1)).saturating_sub(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) - (1 << level_difference),
             ),
         );
 
         // max as well
         let max = (
             (node.x << (level_difference + 1)).saturating_add(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) + (1 << level_difference),
             ),
             (node.y << (level_difference + 1)).saturating_add(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) + (1 << level_difference),
             ),
         );
 
@@ -171,26 +171,26 @@ impl LodVec for OctVec {
         // minimum corner of the bounding box
         let min = (
             (node.x << (level_difference + 1)).saturating_sub(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) - (1 << level_difference),
             ),
             (node.y << (level_difference + 1)).saturating_sub(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) - (1 << level_difference),
             ),
             (node.z << (level_difference + 1)).saturating_sub(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) - (1 << level_difference),
             ),
         );
 
         // max as well
         let max = (
             (node.x << (level_difference + 1)).saturating_add(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) + (1 << level_difference),
             ),
             (node.y << (level_difference + 1)).saturating_add(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) + (1 << level_difference),
             ),
             (node.z << (level_difference + 1)).saturating_add(
-                ((detail + 1) << level_difference).saturating_sub(1 << level_difference),
+                ((detail + 1) << level_difference) + (1 << level_difference),
             ),
         );
 
