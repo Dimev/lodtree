@@ -1,3 +1,5 @@
+//! Contains coordinate structs, QuadVec for quadtrees, and OctVec for octrees, as well as their LodVec implementation
+
 use crate::traits::LodVec;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
@@ -41,8 +43,7 @@ impl LodVec for QuadVec {
             0 => QuadVec::new(self.x << 1, self.y << 1, self.depth + 1),
             1 => QuadVec::new(self.x << 1, (self.y << 1) + 1, self.depth + 1),
             2 => QuadVec::new((self.x << 1) + 1, self.y << 1, self.depth + 1),
-            3 => QuadVec::new((self.x << 1) + 1, (self.y << 1) + 1, self.depth + 1),
-            _ => Self::root(),
+            _ => QuadVec::new((self.x << 1) + 1, (self.y << 1) + 1, self.depth + 1),
         }
     }
 
@@ -148,13 +149,12 @@ impl LodVec for OctVec {
                 self.z << 1,
                 self.depth + 1,
             ),
-            7 => Self::new(
+            _ => Self::new(
                 (self.x << 1) + 1,
                 (self.y << 1) + 1,
                 (self.z << 1) + 1,
                 self.depth + 1,
             ),
-            _ => Self::root(),
         }
     }
 
