@@ -18,6 +18,12 @@ impl Chunk {
 	// pretend this inits the data with some expensive procedural generation
 	fn expensive_init(&mut self, _position: OctVec) {
 		self.data = [1.0; 4096];
+
+		// emulate a 1ms time to do things
+		// we can't use sleep because thats 15ms on windows min
+		let start = std::time::Instant::now();
+
+		while start.elapsed() < std::time::Duration::from_millis(1) {}
 	}
 
 	// and pretend this makes chunks visible/invisible
