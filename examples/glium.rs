@@ -1,49 +1,65 @@
-use glium::{glutin, Surface, implement_vertex, program, uniform};
 use glium::index::PrimitiveType;
+use glium::{glutin, implement_vertex, program, uniform, Surface};
 
-use lodtree::*;
 use lodtree::coords::QuadVec;
+use lodtree::*;
 
 // the chunk struct for the tree
 struct Chunk {
-	position: QuadVec,
-	visible: bool,
+    position: QuadVec,
+    visible: bool,
 }
 
 fn main() {
-
-	// start the glium event loop
-	let event_loop = glutin::event_loop::EventLoop::new();
+    // start the glium event loop
+    let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new();
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-	// make a vertex buffer
-	// we'll reuse it as we only need to draw one quad multiple times anyway
-	let vertex_buffer = {
-		#[derive(Copy, Clone)]
-		struct Vertex {
-			// only need a 2d position
-			position: [f32; 2],
-		}
+    // make a vertex buffer
+    // we'll reuse it as we only need to draw one quad multiple times anyway
+    let vertex_buffer = {
+        #[derive(Copy, Clone)]
+        struct Vertex {
+            // only need a 2d position
+            position: [f32; 2],
+        }
 
-		implement_vertex!(Vertex, position);
+        implement_vertex!(Vertex, position);
 
-		glium::VertexBuffer::new(&display, &[
-			Vertex { position: [ -0.45, -0.45, ] },
-			Vertex { position: [ -0.45, 0.45, ] },
-			Vertex { position: [ 0.45, -0.45, ] },
-			Vertex { position: [ 0.45, 0.45, ] },
-		]).unwrap()
-	};
+        glium::VertexBuffer::new(
+            &display,
+            &[
+                Vertex {
+                    position: [-0.8, -0.8],
+                },
+                Vertex {
+                    position: [-0.8, 0.8],
+                },
+                Vertex {
+                    position: [0.8, -0.8],
+                },
+                Vertex {
+                    position: [0.8, 0.8],
+                },
+            ],
+        )
+        .unwrap()
+    };
 
-	// and the index buffer to form the triangle
-	let index_buffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList, &[0 as u16, 1, 2, 1, 2, 3]).unwrap();
+    // and the index buffer to form the triangle
+    let index_buffer = glium::IndexBuffer::new(
+        &display,
+        PrimitiveType::TrianglesList,
+        &[0 as u16, 1, 2, 1, 2, 3],
+    )
+    .unwrap();
 
-	// and get the shaders
-	let program = program!(&display, 
-	140 => {
-		vertex: "
+    // and get the shaders
+    let program = program!(&display,
+    140 => {
+        vertex: "
 			#version 140
 
 			uniform vec2 offset;
@@ -52,27 +68,28 @@ fn main() {
 			in vec2 position;
 
 			void main() {
-				gl_Position = vec4((position * scale) + offset * 2.0 - 1.0, 0.0, 1.0);
+				gl_Position = vec4((position * scale) + (offset + scale * 0.5) * 2.0 - 1.0, 0.0, 1.0);
 			}
 		",
 
-		fragment: "
+        fragment: "
 			#version 140
 
 			out vec4 gl_FragColor;
 
 			void main() {
-				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
+				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0)
 			}
 		"
-	}
-	).unwrap();
+    }
+    )
+    .unwrap();
 
-	// set up the tree
-	let mut tree = Tree::<Chunk, QuadVec>::new();
+    // set up the tree
+    let mut tree = Tree::<Chunk, QuadVec>::new();
 
-	// run the main loop
-	event_loop.run(move |event, _, control_flow| {
+    // run the main loop
+    event_loop.run(move |event, _, control_flow| {
 		*control_flow = match event {
 			glutin::event::Event::WindowEvent { event, .. } => match event {
 				// stop if the window is closed
@@ -86,6 +103,7 @@ fn main() {
 					);
 
 					// update the tree
+					// adding chunks to their respective position, and also set them visible when adding
 					if tree.prepare_update(&[QuadVec::from_float_coords(mouse_pos.0, 1.0 - mouse_pos.1, 8)], 3, |position| Chunk { position, visible: true }) {
 
 						// position should already have been set, so we can just change the visibility
@@ -133,5 +151,4 @@ fn main() {
 			_ => glutin::event_loop::ControlFlow::Poll,
 		}
 	});
-
 }
