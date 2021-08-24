@@ -9,3 +9,4 @@ edition = "2018"
 
 [dev_dependencies]
 rayon = "1.5"
+glium = "0.30"

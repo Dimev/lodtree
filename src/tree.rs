@@ -117,13 +117,13 @@ where
 	/// get a chunk pending activation
 	#[inline]
 	pub fn get_chunk_to_activate(&self, index: usize) -> &C {
-		&self.chunks[self.chunks_to_activate[index]].chunk
+		&self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].chunk
 	}
 
 	/// get a mutable chunk pending activation
 	#[inline]
 	pub fn get_chunk_to_activate_mut(&mut self, index: usize) -> &mut C {
-		&mut self.chunks[self.chunks_to_activate[index]].chunk
+		&mut self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].chunk
 	}
 
 	/// get the number of chunks pending deactivation
@@ -135,13 +135,13 @@ where
 	/// get a chunk pending deactivation
 	#[inline]
 	pub fn get_chunk_to_deactivate(&mut self, index: usize) -> &C {
-		&self.chunks[self.chunks_to_deactivate[index]].chunk
+		&self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].chunk
 	}
 
 	/// get a mutable chunk pending deactivation
 	#[inline]
 	pub fn get_chunk_to_deactivate_mut(&mut self, index: usize) -> &mut C {
-		&mut self.chunks[self.chunks_to_deactivate[index]].chunk
+		&mut self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].chunk
 	}
 
 	/// get the number of chunks pending removal
@@ -153,13 +153,13 @@ where
 	/// get a chunk pending removal
 	#[inline]
 	pub fn get_chunk_to_remove(&self, index: usize) -> &C {
-		&self.chunks[self.chunks_to_remove[index].0].chunk
+		&self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].chunk
 	}
 
 	/// get a mutable chunk pending removal
 	#[inline]
 	pub fn get_chunk_to_remove_mut(&mut self, index: usize) -> &mut C {
-		&mut self.chunks[self.chunks_to_remove[index].0].chunk
+		&mut self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].chunk
 	}
 
 	/// get the number of chunks to be added

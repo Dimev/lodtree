@@ -2,6 +2,8 @@
 
 use crate::traits::LodVec;
 
+/// A Lod Vector for use in a quadtree
+/// It subdivides into 4 children of equal size
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct QuadVec {
     /// x position in the quadtree
@@ -16,10 +18,42 @@ pub struct QuadVec {
 }
 
 impl QuadVec {
+
+	/// creates a new vector from the raw x and y coords
+	/// # Args
+	/// * `x` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
+	/// * `y` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
+	/// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher
     #[inline]
     pub fn new(x: u64, y: u64, depth: u8) -> Self {
         Self { x, y, depth }
     }
+
+	/// creates a new vector from floating point coords
+	/// mapped so that (0, 0) is the bottom left corner and (1, 1) is the top right
+	/// # Args
+	/// * `x` x coord of the float vector, from 0 to 1
+	/// * `y` y coord of the float vector, from 0 to 1
+	/// * `depth` The lod depth of the coord
+	#[inline]
+	pub fn from_float_coords(x: f64, y: f64, depth: u8) -> Self {
+		// scaling factor due to the lod depth
+		let scale_factor = (1 << depth) as f64;
+
+		// and get the actual coord
+		Self { x: (x * scale_factor) as u64, y: (y * scale_factor) as u64, depth }
+	}
+
+	/// converts the coord into float coords
+	/// Returns a tuple of (x: f64, y: f64) to represent the coordinates
+	#[inline]
+	pub fn get_float_coords(self) -> (f64, f64) {
+		// scaling factor to scale the coords down with
+		let scale_factor = 1.0 / (1 << self.depth) as f64;
+
+		// and the x and y coords
+		(self.x as f64 * scale_factor, self.y as f64 * scale_factor)
+	}
 }
 
 impl LodVec for QuadVec {
@@ -85,6 +119,8 @@ impl LodVec for QuadVec {
     }
 }
 
+/// A Lod Vector for use in an octree
+/// It subdivides into 8 children of equal size
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct OctVec {
     /// x position in the octree
@@ -102,10 +138,43 @@ pub struct OctVec {
 }
 
 impl OctVec {
+	/// creates a new vector from the raw x and y coords
+	/// # Args
+	/// * `x` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
+	/// * `y` The y position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
+	/// * `z` The z position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
+	/// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher
     #[inline]
     pub fn new(x: u64, y: u64, z: u64, depth: u8) -> Self {
         Self { x, y, z, depth }
     }
+
+	/// creates a new vector from floating point coords
+	/// mapped so that (0, 0, 0) is the front bottom left corner and (1, 1, 1) is the back top right
+	/// # Args
+	/// * `x` x coord of the float vector, from 0 to 1
+	/// * `y` y coord of the float vector, from 0 to 1
+	/// * `z` z coord of the float vector, from 0 to 1
+	/// * `depth` The lod depth of the coord
+	#[inline]
+	pub fn from_float_coords(x: f64, y: f64, z: f64, depth: u8) -> Self {
+		// scaling factor due to the lod depth
+		let scale_factor = (1 << depth) as f64;
+
+		// and get the actual coord
+		Self { x: (x * scale_factor) as u64, y: (y * scale_factor) as u64, z: (z * scale_factor) as u64, depth }
+	}
+
+	/// converts the coord into float coords
+	/// Returns a tuple of (x: f64, y: f64, z: f64) to represent the coordinates
+	#[inline]
+	pub fn get_float_coords(self) -> (f64, f64, f64) {
+		// scaling factor to scale the coords down with
+		let scale_factor = 1.0 / (1 << self.depth) as f64;
+
+		// and the x and y coords
+		(self.x as f64 * scale_factor, self.y as f64 * scale_factor, self.z as f64 * scale_factor)
+	}
 }
 
 impl LodVec for OctVec {
