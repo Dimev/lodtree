@@ -268,11 +268,10 @@ where
 
                     // and add the parent
                     self.chunks_to_add_parent.push(current_node_index);
-
                 }
 
-				// and add ourselves for deactivation
-				self.chunks_to_deactivate.push(current_node_index);
+                // and add ourselves for deactivation
+                self.chunks_to_deactivate.push(current_node_index);
             } else if let Some(index) = current_node.children {
                 // otherwise, if we cant subdivide and don't have a root as children, remove our children
                 if !can_subdivide
@@ -321,7 +320,7 @@ where
             self.chunks.swap_remove(chunk_index);
 
             // and properly set the chunk pointer of the node of the chunk we just moved, if any
-			// if we removed the last chunk, no need to update anything
+            // if we removed the last chunk, no need to update anything
             if chunk_index < self.chunks.len() {
                 self.nodes[self.chunks[chunk_index].index].chunk = chunk_index;
             }
@@ -360,9 +359,9 @@ where
             };
 
             // correctly set the children of the parent node
-			// because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such]
-			// node 0 is the root, so the last child it has will be on num_children
-			// then subtracting num_children - 1 from that gives us node 1, which is the first child of the root
+            // because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such]
+            // node 0 is the root, so the last child it has will be on num_children
+            // then subtracting num_children - 1 from that gives us node 1, which is the first child of the root
             if new_node_index >= L::num_children() {
                 // because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
                 // so we need to adjust for that
