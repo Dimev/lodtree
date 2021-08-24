@@ -78,7 +78,7 @@ fn main() {
 			out vec4 gl_FragColor;
 
 			void main() {
-				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0)
+				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
 			}
 		"
     }
@@ -94,7 +94,7 @@ fn main() {
 			glutin::event::Event::WindowEvent { event, .. } => match event {
 				// stop if the window is closed
 				glutin::event::WindowEvent::CloseRequested => glutin::event_loop::ControlFlow::Exit,
-				glutin::event::WindowEvent::CursorMoved { device_id, position, .. } => {
+				glutin::event::WindowEvent::CursorMoved { position, .. } => {
 					
 					// get the mouse position
 					let mouse_pos = (
