@@ -13,7 +13,7 @@ struct Chunk {
 fn main() {
     // start the glium event loop
     let event_loop = glutin::event_loop::EventLoop::new();
-    let wb = glutin::window::WindowBuilder::new();
+    let wb = glutin::window::WindowBuilder::new().with_title("Quadtree demo");
     let cb = glutin::ContextBuilder::new();
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
@@ -32,16 +32,16 @@ fn main() {
             &display,
             &[
                 Vertex {
-                    position: [-0.8, -0.8],
+                    position: [-1.0, -1.0],
                 },
                 Vertex {
-                    position: [-0.8, 0.8],
+                    position: [-1.0, 1.0],
                 },
                 Vertex {
-                    position: [0.8, -0.8],
+                    position: [1.0, -1.0],
                 },
                 Vertex {
-                    position: [0.8, 0.8],
+                    position: [1.0, 1.0],
                 },
             ],
         )
@@ -68,7 +68,12 @@ fn main() {
 			in vec2 position;
 
 			void main() {
-				gl_Position = vec4((position * scale) + (offset + scale * 0.5) * 2.0 - 1.0, 0.0, 1.0);
+
+				vec2 local_position = position * scale + 0.005;
+				local_position.x = min(local_position.x, scale) - 0.0025;
+				local_position.y = min(local_position.y, scale) - 0.0025;
+
+				gl_Position = vec4(local_position + (offset + scale * 0.5) * 2.0 - 1.0, 0.0, 1.0);
 			}
 		",
 
@@ -78,6 +83,7 @@ fn main() {
 			out vec4 gl_FragColor;
 
 			void main() {
+
 				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
 			}
 		"
@@ -85,8 +91,57 @@ fn main() {
     )
     .unwrap();
 
-    // set up the tree
+	let draw = move |mouse_pos: (f64, f64), tree: &mut Tree<Chunk, QuadVec>, display: &glium::Display| {
+
+
+		// update the tree
+		// adding chunks to their respective position, and also set them visible when adding
+		if tree.prepare_update(&[QuadVec::from_float_coords(mouse_pos.0, 1.0 - mouse_pos.1, 6)], 2, |position| Chunk { position, visible: true }) {
+
+			// position should already have been set, so we can just change the visibility
+			for i in 0..tree.get_num_chunks_to_activate() {
+				tree.get_chunk_to_activate_mut(i).visible = true;
+			}
+
+			for i in 0..tree.get_num_chunks_to_deactivate() {
+				tree.get_chunk_to_deactivate_mut(i).visible = false;
+			}
+
+			// do the update
+			tree.do_update();
+
+		}
+
+		// and, Redraw!
+		let mut target = display.draw();
+		target.clear_color(0.1, 0.1, 0.1, 0.1);
+
+		// go over all chunks
+		for i in 0..tree.get_num_chunks() {
+
+			// get the chunk
+			let chunk = tree.get_chunk(i);
+
+			if chunk.visible {
+
+				let uniforms = uniform! {
+					offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
+					scale: 1.0 / (1 << chunk.position.depth) as f32, 
+				};
+
+				target.draw(&vertex_buffer, &index_buffer, &program, &uniforms, &Default::default()).unwrap();
+
+			}
+		}
+
+		target.finish().unwrap();
+
+	};
+
+	// set up the tree
     let mut tree = Tree::<Chunk, QuadVec>::new();
+
+	draw((0.5, 0.5), &mut tree, &display);
 
     // run the main loop
     event_loop.run(move |event, _, control_flow| {
@@ -102,47 +157,7 @@ fn main() {
 						position.y / display.get_framebuffer_dimensions().1 as f64
 					);
 
-					// update the tree
-					// adding chunks to their respective position, and also set them visible when adding
-					if tree.prepare_update(&[QuadVec::from_float_coords(mouse_pos.0, 1.0 - mouse_pos.1, 8)], 3, |position| Chunk { position, visible: true }) {
-
-						// position should already have been set, so we can just change the visibility
-						for i in 0..tree.get_num_chunks_to_activate() {
-							tree.get_chunk_to_activate_mut(i).visible = true;
-						}
-			
-						for i in 0..tree.get_num_chunks_to_deactivate() {
-							tree.get_chunk_to_deactivate_mut(i).visible = false;
-						}
-
-						// do the update
-						tree.do_update();
-
-					}
-
-					// and, Redraw!
-					let mut target = display.draw();
-					target.clear_color(0.1, 0.1, 0.1, 0.1);
-
-					// go over all chunks
-					for i in 0..tree.get_num_chunks() {
-
-						// get the chunk
-						let chunk = tree.get_chunk(i);
-
-						if chunk.visible {
-
-							let uniforms = uniform! {
-								offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
-								scale: 1.0 / (1 << chunk.position.depth) as f32, 
-							};
-
-							target.draw(&vertex_buffer, &index_buffer, &program, &uniforms, &Default::default()).unwrap();
-
-						}
-					}
-
-					target.finish().unwrap();
+					draw(mouse_pos, &mut tree, &display);
 
 					glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(16))
 				}
