@@ -272,9 +272,10 @@ where
                     // and add the parent
                     self.chunks_to_add_parent.push(current_node_index);
 
-                    // and add ourselves for deactivation
-                    self.chunks_to_deactivate.push(current_node_index);
                 }
+
+				// and add ourselves for deactivation
+				self.chunks_to_deactivate.push(current_node_index);
             } else if let Some(index) = current_node.children {
                 // otherwise, if we cant subdivide and don't have a root as children, remove our children
                 if !can_subdivide

@@ -144,11 +144,11 @@ fn main() {
 
 					target.finish().unwrap();
 
-					glutin::event_loop::ControlFlow::Poll
+					glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(16))
 				}
-                _ => glutin::event_loop::ControlFlow::Poll,
+                _ => glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(16)),
 			},
-			_ => glutin::event_loop::ControlFlow::Poll,
+			_ => glutin::event_loop::ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(16)),
 		}
 	});
 }
