@@ -16,7 +16,7 @@
 //! use lodtree::coords::OctVec; // or QuadVec if you're making an octree
 //! ```
 //!
-//! The tree is it's own struct, and accepts a chunk (anything that implements Sized) and the lod vector (Anything that implements the LodVec trait)
+//! The tree is it's own struct, and accepts a chunk (anything that implements Sized) and the lod vector (Anything that implements the LodVec trait).
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::OctVec;
@@ -24,8 +24,8 @@
 //! let mut tree = Tree::<Chunk, OctVec>::new();
 //! ```
 //!
-//! If you want to update chunks due to the camera being moved, you can check if it's needed with prepare_update
-//! It takes in 3 parameters
+//! If you want to update chunks due to the camera being moved, you can check if it's needed with prepare_update.
+//! It takes in 3 parameters.
 //!
 //! Targets: where to generate the most detail around.
 //!
@@ -33,12 +33,12 @@
 //! The first 3/2 are the position in the tree, which is dependant on the lod level.
 //! and the last parameter is the lod level. No lods smaller than this will be generated for this target.
 //!
-//! Detail: The amount of detail for the targets
-//! The default implementation defines this as the amount of chunks at the target lod level surrounding the target chunk
+//! Detail: The amount of detail for the targets.
+//! The default implementation defines this as the amount of chunks at the target lod level surrounding the target chunk.
 //!
 //! Chunk creator:
-//! Internally a buffer for new chunks is filled, and this function is called to create the new chunk
-//! It takes in the LodVec of the position of the chunk
+//! Internally a buffer for new chunks is filled, and this function is called to create the new chunk.
+//! It takes in the LodVec of the position of the chunk.
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::OctVec;
@@ -52,8 +52,8 @@
 //! ```
 //!
 //! Now, the tree is ready for an update, so now we'll want to do something with that.
-//! First, we want to process all chunks that are going to be added
-//! This is the only thing the API exposes as a slice, so we can nicely iterate over that in parallel with rayon
+//! First, we want to process all chunks that are going to be added.
+//! This is the only thing the API exposes as a slice, so we can nicely iterate over that in parallel with rayon.
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
@@ -71,7 +71,7 @@
 //! 	});
 //! ```
 //!
-//! Next, we'll also want to change the visibility of some chunks so they don't overlap with higher detail lods
+//! Next, we'll also want to change the visibility of some chunks so they don't overlap with higher detail lods.
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
@@ -89,7 +89,7 @@
 //! 	tree.get_chunk_to_deactivate_mut(i).set_visible(false);
 //! }
 //! ```
-//! We'll probably also want to do some cleanup with chunks that are removed
+//! We'll probably also want to do some cleanup with chunks that are removed.
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
@@ -103,7 +103,7 @@
 //! }
 //! ```
 //! And finally, actually update the tree with the new chunks.
-//! Note that it's likely needed to do the prepare_update and do_update cycle a number of times before no new chunks need to be added, as the tree only adds one lod level at a time
+//! Note that it's likely needed to do the prepare_update and do_update cycle a number of times before no new chunks need to be added, as the tree only adds one lod level at a time.
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
