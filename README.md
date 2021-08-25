@@ -7,7 +7,11 @@ The aim of this crate is to provide a generic, easy to use tree data structure t
 Internally, the tree tries to keep as much memory allocated, to avoid the cost of heap allocation, and stores the actual chunks data seperate from the tree data.
  
 This does come at a cost, mainly, only the chunks that are going to be added and their locations can be retreived as a slice, although for most (procedural) terrain implementations
-making new chunks and editing them will be the highest cost to do, so that shouldn't be the biggest issue.
+making new chunks and editing them will be the highest cost to do, so that shouldn't be the biggest issue.`
+
+### Examples:
+ - rayon: shows how to use the tree with rayon to generate new chunks in parallel
+ - glium: shows how a basic drawing setup would work, with glium to do the drawing
 
 ### Usage:
 Import the crate

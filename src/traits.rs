@@ -21,6 +21,8 @@ pub trait LodVec: Sized + Copy + Clone + Send + Sync + Default {
 	/// 
 	/// The implementation used in the QuadVec implementation is as follows:
 	/// ```rust
+	/// # struct Chunk { x: u64, y: u64, depth: u8 }
+	/// # impl Chunk {
 	/// fn can_subdivide(self, node: Self, detail: u64) -> bool {
     ///    // return early if the level of this chunk is too high
     ///    if node.depth >= self.depth {
@@ -52,6 +54,7 @@ pub trait LodVec: Sized + Copy + Clone + Send + Sync + Default {
     ///    // check if the target is inside of the bounding box
     ///    local.0 >= min.0 && local.0 < max.0 && local.1 >= min.1 && local.1 < max.1
     /// }
+	/// # }
 	/// ```
     fn can_subdivide(self, node: Self, detail: u64) -> bool;
 }

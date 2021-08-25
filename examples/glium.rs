@@ -14,7 +14,7 @@ fn main() {
     // start the glium event loop
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new().with_title("Quadtree demo");
-    let cb = glutin::ContextBuilder::new();
+    let cb = glutin::ContextBuilder::new().with_vsync(true);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     // make a vertex buffer
