@@ -72,6 +72,13 @@ for i in 0..tree.get_num_chunks_to_deactivate() {
 	tree.get_chunk_to_deactivate_mut(i).set_visible(false);
 }
 ```
+We'll probably also want to do some cleanup with chunks that are removed
+```rust
+for i in 0..tree.get_num_chunks_to_remove() {
+	tree.get_chunk_to_remove_mut(i).cleanup();
+} 
+```
+
 And finally, actually update the tree with the new chunks.
 Note that it's likely needed to do the prepare_update and do_update cycle a number of times before no new chunks need to be added, as the tree only adds one lod level at a time
 ```rust
