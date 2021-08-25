@@ -401,10 +401,10 @@ where
         self.processing_queue.clear();
     }
 
-	/// Shrinks all internal buffers to fit, reducing memory usage
-	/// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory 
-	pub fn shrink(&mut self) {
-		self.chunks.shrink_to_fit();
+    /// Shrinks all internal buffers to fit, reducing memory usage
+    /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory
+    pub fn shrink(&mut self) {
+        self.chunks.shrink_to_fit();
         self.nodes.shrink_to_fit();
         self.free_list.shrink_to_fit();
         self.chunks_to_add.shrink_to_fit();
@@ -412,7 +412,7 @@ where
         self.chunks_to_activate.shrink_to_fit();
         self.chunks_to_deactivate.shrink_to_fit();
         self.processing_queue.shrink_to_fit();
-	}
+    }
 }
 
 impl<C, L> Default for Tree<C, L>

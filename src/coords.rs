@@ -48,7 +48,7 @@ impl QuadVec {
     }
 
     /// converts the coord into float coords
-    /// Returns a tuple of (x: f64, y: f64) to represent the coordinates
+    /// Returns a tuple of (x: f64, y: f64) to represent the coordinates, this is the lower left corner
     #[inline]
     pub fn get_float_coords(self) -> (f64, f64) {
         // scaling factor to scale the coords down with
@@ -56,6 +56,12 @@ impl QuadVec {
 
         // and the x and y coords
         (self.x as f64 * scale_factor, self.y as f64 * scale_factor)
+    }
+
+    /// gets the size the chunk of this lod vector takes up, with the root taking up
+    #[inline]
+    pub fn get_size(self) -> f64 {
+        1.0 / (1 << self.depth) as f64
     }
 }
 
@@ -170,7 +176,7 @@ impl OctVec {
     }
 
     /// converts the coord into float coords
-    /// Returns a tuple of (x: f64, y: f64, z: f64) to represent the coordinates
+    /// Returns a tuple of (x: f64, y: f64, z: f64) to represent the coordinates, at the front bottom left corner
     #[inline]
     pub fn get_float_coords(self) -> (f64, f64, f64) {
         // scaling factor to scale the coords down with
@@ -182,6 +188,12 @@ impl OctVec {
             self.y as f64 * scale_factor,
             self.z as f64 * scale_factor,
         )
+    }
+
+    /// gets the size the chunk of this lod vector takes up, with the root taking up
+    #[inline]
+    pub fn get_size(self) -> f64 {
+        1.0 / (1 << self.depth) as f64
     }
 }
 

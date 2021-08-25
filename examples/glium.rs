@@ -131,11 +131,14 @@ fn main() {
             let chunk = tree.get_chunk(i);
 
             if chunk.visible {
+                // draw it if it's visible
+                // here we get the chunk position and size
                 let uniforms = uniform! {
                     offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
-                    scale: 1.0 / (1 << chunk.position.depth) as f32,
+                    scale: chunk.position.get_size() as f32,
                 };
 
+                // draw it with glium
                 target
                     .draw(
                         &vertex_buffer,
