@@ -307,6 +307,13 @@ where
     pub fn do_update(&mut self) {
         // no need to do anything with chunks that needed to be (de)activated, as we assume that has been handled beforehand
 
+		// first, get the iterator for chunks that will be added
+		// this becomes useful later
+		let mut chunks_to_add_iter = self
+			.chunks_to_add_parent
+			.drain(..)
+			.zip(self.chunks_to_add.drain(..));
+
         // then, remove old chunks
         // we'll drain the vector, as we don't need it anymore afterward
         for (index, parent_index) in self.chunks_to_remove.drain(..) {
@@ -314,10 +321,54 @@ where
             self.nodes[parent_index].children = None;
             self.free_list.push_back(index);
 
-            // and swap remove the chunk
+            // and remove the chunk
             let chunk_index = self.nodes[index].chunk;
 
-            self.chunks.swap_remove(chunk_index);
+			// but not so fast, because if we can overwrite it with a new chunk, do so
+			// that way we can avoid a copy later on, which might be expensive
+			if let Some((parent_index, (_, chunk))) = chunks_to_add_iter.next() {
+
+				// add the node
+				let new_node_index = match self.free_list.pop_front() {
+					Some(x) => {
+						// reuse a free node
+						self.nodes[x] = TreeNode {
+							children: None,
+							chunk: chunk_index,
+						};
+						self.chunks[chunk_index] = ChunkContainer { index: x, chunk };
+						x
+					}
+					None => {
+						// otherwise, use a new index
+						self.nodes.push(TreeNode {
+							children: None,
+							chunk: chunk_index,
+						});
+						self.chunks[chunk_index] = ChunkContainer {
+							index: self.nodes.len() - 1,
+							chunk,
+						};
+						self.nodes.len() - 1
+					}
+				};
+	
+				// correctly set the children of the parent node
+				// because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such]
+				// node 0 is the root, so the last child it has will be on num_children
+				// then subtracting num_children - 1 from that gives us node 1, which is the first child of the root
+				if new_node_index >= L::num_children() {
+					// because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
+					// so we need to adjust for that
+					self.nodes[parent_index].children =
+						NonZeroUsize::new(new_node_index - (L::num_children() - 1));
+				}
+
+			} else {
+
+				// otherwise we do need to do a regular swap remove
+            	self.chunks.swap_remove(chunk_index);
+			}
 
             // and properly set the chunk pointer of the node of the chunk we just moved, if any
             // if we removed the last chunk, no need to update anything
@@ -328,11 +379,7 @@ where
 
         // add new chunks
         // we'll drain the vector here as well, as we won't need it anymore afterward
-        for (parent_index, (_, chunk)) in self
-            .chunks_to_add_parent
-            .drain(..)
-            .zip(self.chunks_to_add.drain(..))
-        {
+        for (parent_index, (_, chunk)) in chunks_to_add_iter {
             // add the node
             let new_node_index = match self.free_list.pop_front() {
                 Some(x) => {
