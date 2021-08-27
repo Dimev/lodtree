@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "lodtree"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glium",
  "rayon",
