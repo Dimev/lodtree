@@ -1,4 +1,4 @@
-https://docs.rs/lodtree/badge.svg
+[![Documentation](https://docs.rs/lodtree/badge.svg)](https://docs.rs/lodtree)
 
 # LodTree
 LodTree, a simple tree data structure for doing chunk-based level of detail.
