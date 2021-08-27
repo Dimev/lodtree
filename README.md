@@ -1,3 +1,5 @@
+https://docs.rs/lodtree/badge.svg
+
 # LodTree
 LodTree, a simple tree data structure for doing chunk-based level of detail.
 
