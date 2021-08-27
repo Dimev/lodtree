@@ -3,7 +3,7 @@ use lodtree::*;
 use rayon::prelude::*;
 
 struct Chunk {
-    data: [f32; 4096],
+    data: [f32; 4096], // this amount of data actually makes it slower. To see the true octree speed, replace this with [f32; 0]
 }
 
 impl Chunk {

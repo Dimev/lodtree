@@ -19,11 +19,11 @@ struct TreeNode {
 
 // utility struct for holding actual chunks and the node that owns them
 #[derive(Debug)]
-pub struct ChunkContainer<C>
+struct ChunkContainer<C>
 where
     C: Sized,
 {
-    pub chunk: C,
+    chunk: C,
     index: usize,
 }
 
