@@ -1,16 +1,16 @@
-//! Contains LodVec trait, which is needed for the coordinate system to be used in a tree
-//! Sample implementations for this are in coords.rs
+//! Contains LodVec trait, which is needed for the coordinate system to be used in a tree.
+//! Sample implementations for this are in coords.rs.
 
-/// trait for defining a Level of Detail vector
-/// such a vector contains the current position in the octree (3d coords), as well as the lod level it's at, in integer coords
+/// trait for defining a Level of Detail vector.
+/// such a vector contains the current position in the octree (3d coords), as well as the lod level it's at, in integer coords.
 pub trait LodVec: Sized + Copy + Clone + Send + Sync + Default {
-    /// gets one of the child node position of this node, defined by it's index
+    /// gets one of the child node position of this node, defined by it's index.
     fn get_child(self, index: usize) -> Self;
 
-    /// get the number of child nodes a node can have in the tree
+    /// get the number of child nodes a node can have in the tree.
     fn num_children() -> usize;
 
-    /// returns the lod vector as if it's at the root of the tree
+    /// returns the lod vector as if it's at the root of the tree.
     fn root() -> Self;
 
     /// wether the node can subdivide, compared to another node and the required detail.

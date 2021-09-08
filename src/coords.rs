@@ -2,23 +2,23 @@
 
 use crate::traits::LodVec;
 
-/// A Lod Vector for use in a quadtree
-/// It subdivides into 4 children of equal size
+/// A Lod Vector for use in a quadtree.
+/// It subdivides into 4 children of equal size.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct QuadVec {
-    /// x position in the quadtree
+    /// x position in the quadtree.
     pub x: u64,
 
-    /// y position in the quadtree
+    /// y position in the quadtree.
     pub y: u64,
 
-    /// lod depth in the quadtree
-    /// this is limited, hence we use u8
+    /// lod depth in the quadtree.
+    /// this is limited, hence we use u8.
     pub depth: u8,
 }
 
 impl QuadVec {
-    /// creates a new vector from the raw x and y coords
+    /// creates a new vector from the raw x and y coords.
     /// # Args
     /// * `x` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
     /// * `y` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
@@ -47,8 +47,8 @@ impl QuadVec {
         }
     }
 
-    /// converts the coord into float coords
-    /// Returns a tuple of (x: f64, y: f64) to represent the coordinates, this is the lower left corner
+    /// converts the coord into float coords.
+    /// Returns a tuple of (x: f64, y: f64) to represent the coordinates, this is the lower left corner.
     #[inline]
     pub fn get_float_coords(self) -> (f64, f64) {
         // scaling factor to scale the coords down with
@@ -58,7 +58,7 @@ impl QuadVec {
         (self.x as f64 * scale_factor, self.y as f64 * scale_factor)
     }
 
-    /// gets the size the chunk of this lod vector takes up, with the root taking up
+    /// gets the size the chunk of this lod vector takes up, with the root taking up.
     #[inline]
     pub fn get_size(self) -> f64 {
         1.0 / (1 << self.depth) as f64
@@ -124,38 +124,38 @@ impl LodVec for QuadVec {
     }
 }
 
-/// A Lod Vector for use in an octree
-/// It subdivides into 8 children of equal size
+/// A Lod Vector for use in an octree.
+/// It subdivides into 8 children of equal size.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub struct OctVec {
-    /// x position in the octree
+    /// x position in the octree.
     pub x: u64,
 
-    /// y position in the octree
+    /// y position in the octree.
     pub y: u64,
 
-    /// z position in the octree
+    /// z position in the octree.
     pub z: u64,
 
-    /// lod depth in the octree
-    /// this is limited, hence we use u8
+    /// lod depth in the octree.
+    /// this is limited, hence we use u8.
     pub depth: u8,
 }
 
 impl OctVec {
-    /// creates a new vector from the raw x and y coords
+    /// creates a new vector from the raw x and y coords.
     /// # Args
     /// * `x` The x position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
     /// * `y` The y position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
     /// * `z` The z position in the tree. Allowed range scales with the depth (doubles as the depth increases by one)
-    /// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher
+    /// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher.
     #[inline]
     pub fn new(x: u64, y: u64, z: u64, depth: u8) -> Self {
         Self { x, y, z, depth }
     }
 
-    /// creates a new vector from floating point coords
-    /// mapped so that (0, 0, 0) is the front bottom left corner and (1, 1, 1) is the back top right
+    /// creates a new vector from floating point coords.
+    /// mapped so that (0, 0, 0) is the front bottom left corner and (1, 1, 1) is the back top right.
     /// # Args
     /// * `x` x coord of the float vector, from 0 to 1
     /// * `y` y coord of the float vector, from 0 to 1
@@ -175,8 +175,8 @@ impl OctVec {
         }
     }
 
-    /// converts the coord into float coords
-    /// Returns a tuple of (x: f64, y: f64, z: f64) to represent the coordinates, at the front bottom left corner
+    /// converts the coord into float coords.
+    /// Returns a tuple of (x: f64, y: f64, z: f64) to represent the coordinates, at the front bottom left corner.
     #[inline]
     pub fn get_float_coords(self) -> (f64, f64, f64) {
         // scaling factor to scale the coords down with
@@ -190,7 +190,7 @@ impl OctVec {
         )
     }
 
-    /// gets the size the chunk of this lod vector takes up, with the root taking up
+    /// gets the size the chunk of this lod vector takes up, with the root taking up.
     #[inline]
     pub fn get_size(self) -> f64 {
         1.0 / (1 << self.depth) as f64

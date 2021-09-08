@@ -29,7 +29,7 @@ where
 
 // Tree holding all chunks
 // partially based on: https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
-// assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes
+// assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes.
 #[derive(Debug)]
 pub struct Tree<C, L>
 where
@@ -71,6 +71,7 @@ where
     C: Sized,
     L: LodVec,
 {
+	/// create a new, empty tree
     pub fn new() -> Self {
         // make a new Tree
         // also allocate some room for nodes
@@ -131,7 +132,7 @@ where
 
     /// get a chunk pending deactivation
     #[inline]
-    pub fn get_chunk_to_deactivate(&mut self, index: usize) -> &C {
+    pub fn get_chunk_to_deactivate(&self, index: usize) -> &C {
         &self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].chunk
     }
 
@@ -177,6 +178,18 @@ where
         &self.chunks_to_add[index].1
     }
 
+    /// get a position and the associated mutable chunk that's going to be added
+    #[inline]
+    pub fn get_position_and_chunk_to_add_mut(&mut self, index: usize) -> (L, &mut C) {
+        (self.chunks_to_add[index].0, &mut self.chunks_to_add[index].1)
+    }
+
+	/// get a position and the associated chunk that's going to be added
+    #[inline]
+    pub fn get_position_and_chunk_to_add(&self, index: usize) -> (L, &C) {
+        (self.chunks_to_add[index].0, &self.chunks_to_add[index].1)
+    }
+
     /// get a mutable chunk that's going to be added
     #[inline]
     pub fn get_chunk_to_add_mut(&mut self, index: usize) -> &mut C {
@@ -208,13 +221,13 @@ where
     // clear the free list once we only have one chunk (the root) active
     // swap remove chunks, and update the node that references them (nodes won't move due to free list)
 
-    /// prepares the tree for an update
-    /// this fills the internal lists of what chunks need to be added or removed
+    /// prepares the tree for an update.
+    /// this fills the internal lists of what chunks need to be added or removed.
     /// # Params
     /// * `targets` The target positions to generate the lod around (QuadVec and OctVec define the center position and max lod in depth for this)
     /// * `detail` The detail for these targets (QuadVec and OctVec define this as amount of chunks around this point)
     /// * `chunk_creator` function to create a new chunk from a given position
-    /// returns wether any update is needed
+    /// returns wether any update is needed.
     pub fn prepare_update(
         &mut self,
         targets: &[L],
@@ -301,9 +314,9 @@ where
         !self.chunks_to_add.is_empty() || !self.chunks_to_remove.is_empty()
     }
 
-    /// runs the update that's stored in the internal lists
-    /// this adds and removes chunks based on that, however this assumes that chunks in the to_activate and to_deactivate list were manually activated or deactivated
-    /// this also assumes that the chunks in to_add had proper initialization, as they are added to the tree
+    /// runs the update that's stored in the internal lists.
+    /// this adds and removes chunks based on that, however this assumes that chunks in the to_activate and to_deactivate list were manually activated or deactivated.
+    /// this also assumes that the chunks in to_add had proper initialization, as they are added to the tree.
     pub fn do_update(&mut self) {
         // no need to do anything with chunks that needed to be (de)activated, as we assume that has been handled beforehand
 
@@ -353,10 +366,10 @@ where
 					}
 				};
 	
-				// correctly set the children of the parent node
-				// because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such]
-				// node 0 is the root, so the last child it has will be on num_children
-				// then subtracting num_children - 1 from that gives us node 1, which is the first child of the root
+				// correctly set the children of the parent node.
+				// because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such].
+				// node 0 is the root, so the last child it has will be on num_children.
+				// then subtracting num_children - 1 from that gives us node 1, which is the first child of the root.
 				if new_node_index >= L::num_children() {
 					// because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
 					// so we need to adjust for that
@@ -405,10 +418,10 @@ where
                 }
             };
 
-            // correctly set the children of the parent node
-            // because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such]
-            // node 0 is the root, so the last child it has will be on num_children
-            // then subtracting num_children - 1 from that gives us node 1, which is the first child of the root
+            // correctly set the children of the parent node.
+            // because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such].
+            // node 0 is the root, so the last child it has will be on num_children.
+            // then subtracting num_children - 1 from that gives us node 1, which is the first child of the root.
             if new_node_index >= L::num_children() {
                 // because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
                 // so we need to adjust for that
@@ -448,8 +461,8 @@ where
         self.processing_queue.clear();
     }
 
-    /// Shrinks all internal buffers to fit, reducing memory usage
-    /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory
+    /// Shrinks all internal buffers to fit, reducing memory usage.
+    /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory.
     pub fn shrink(&mut self) {
         self.chunks.shrink_to_fit();
         self.nodes.shrink_to_fit();
@@ -491,6 +504,12 @@ mod tests {
             tree.do_update();
         }
 
+		// and move the target
+        while tree.prepare_update(&[QuadVec::new(16, 8, 16)], 8, |_| TestChunk {}) {
+            // and actually update
+            tree.do_update();
+        }
+
         // and make the tree have no items
         while tree.prepare_update(&[], 8, |_| TestChunk {}) {
             // and actually update
@@ -502,6 +521,12 @@ mod tests {
 
         // as long as we need to update, do so
         while tree.prepare_update(&[OctVec::new(128, 128, 128, 32)], 8, |_| TestChunk {}) {
+            // and actually update
+            tree.do_update();
+        }
+
+		// and move the target
+        while tree.prepare_update(&[OctVec::new(16, 8, 32, 16)], 8, |_| TestChunk {}) {
             // and actually update
             tree.do_update();
         }
