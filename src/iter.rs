@@ -60,38 +60,38 @@ where
 
 	// iterate over all chunks, mutable
 
-	// iterate over all chunks to activate
+	/// iterate over all chunks to activate
 	pub fn iter_chunks_to_activate(&self) -> ChunkToActivateIter<C, L> {
 		ChunkToActivateIter { tree: self, index: 0 }
 	}
 
 	// iterate over all chunks to activate, mut
 
-	// iterate over all chunks to deactivate
+	/// iterate over all chunks to deactivate
 	pub fn iter_chunks_to_deactivate(&self) -> ChunkToDeactivateIter<C, L> {
 		ChunkToDeactivateIter { tree: self, index: 0 }
 	}
 
 	// iterate over all chunks to deactivate, mut
 
-	// iterate over all chunks to remove
+	/// iterate over all chunks to remove
 	pub fn iter_chunks_to_remove(&self) -> ChunkToRemoveIter<C, L> {
 		ChunkToRemoveIter { tree: self, index: 0 }
 	}
 
 	// iterate over all chunks to remove, mut
 
-	// iterate over all chunks to add
+	/// iterate over all chunks to add
 	pub fn iter_chunks_to_add(&self) -> ChunkToAddIter<C, L> {
 		ChunkToAddIter { tree: self, index: 0 }
 	}
 
-	// iterate over the positions of all chunks to add
+	/// iterate over the positions of all chunks to add
 	pub fn iter_positions_of_chunks_to_add(&self) -> PositionToAddIter<C, L> {
 		PositionToAddIter { tree: self, index: 0 }
 	}
 
-	// iterate over the positions and all chunks to add
+	/// iterate over the positions and all chunks to add
 	pub fn iter_positions_and_chunks_to_add(&self) -> PositionAndChunkToAddIter<C, L> {
 		PositionAndChunkToAddIter { tree: self, index: 0 }
 	}
