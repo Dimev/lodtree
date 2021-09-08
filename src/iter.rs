@@ -62,7 +62,7 @@ macro_rules! impl_iterator_mut {
 				} else {
 
 					// otherwise, get the item
-					let item = self.tree.$get(self.index - 1);
+					let mut item = self.tree.$get(self.index);
 
 					// increment the index
 					self.index += 1;
