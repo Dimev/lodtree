@@ -46,6 +46,8 @@ impl_iterator!(PositionToAddIter, L, get_num_chunks_to_add, get_position_of_chun
 impl_iterator!(PositionAndChunkToAddIter, (L, &'a C), get_num_chunks_to_add, get_position_and_chunk_to_add);
 impl_iterator!(ChunkToRemoveIter, &'a C, get_num_chunks_to_remove, get_chunk_to_remove);
 
+// TODO: iterator for all 
+
 impl<'a, C, L> Tree<C, L>
 where
     C: Sized,

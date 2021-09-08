@@ -125,10 +125,8 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.1, 0.1, 0.1, 0.1);
 
-        // go over all chunks
-        for i in 0..tree.get_num_chunks() {
-            // get the chunk
-            let chunk = tree.get_chunk(i);
+        // go over all chunks, iterator version
+        for chunk in tree.iter_chunks() {
 
             if chunk.visible {
                 // draw it if it's visible
@@ -159,32 +157,44 @@ fn main() {
 
     draw((0.5, 0.5), &mut tree, &display);
 
+	// the mouse cursor position
+	let mut mouse_pos = (0.5, 0.5);
+
+	// last time redraw was done
+	let mut last_redraw = std::time::Instant::now();
+
     // run the main loop
     event_loop.run(move |event, _, control_flow| {
         *control_flow = match event {
+			glutin::event::Event::RedrawRequested(_) => {
+
+				// and draw, if enough time elapses
+				if last_redraw.elapsed().as_millis() > 16 {
+					draw(mouse_pos, &mut tree, &display);
+					last_redraw = std::time::Instant::now();
+				}
+
+				glutin::event_loop::ControlFlow::Wait
+
+			},
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 // stop if the window is closed
                 glutin::event::WindowEvent::CloseRequested => glutin::event_loop::ControlFlow::Exit,
                 glutin::event::WindowEvent::CursorMoved { position, .. } => {
                     // get the mouse position
-                    let mouse_pos = (
+                    mouse_pos = (
                         position.x / display.get_framebuffer_dimensions().0 as f64,
                         position.y / display.get_framebuffer_dimensions().1 as f64,
                     );
 
-                    draw(mouse_pos, &mut tree, &display);
+					// request a redraw
+					display.gl_window().window().request_redraw();
 
-                    glutin::event_loop::ControlFlow::WaitUntil(
-                        std::time::Instant::now() + std::time::Duration::from_millis(16),
-                    )
+                    glutin::event_loop::ControlFlow::Wait
                 }
-                _ => glutin::event_loop::ControlFlow::WaitUntil(
-                    std::time::Instant::now() + std::time::Duration::from_millis(16),
-                ),
+                _ => glutin::event_loop::ControlFlow::Wait,
             },
-            _ => glutin::event_loop::ControlFlow::WaitUntil(
-                std::time::Instant::now() + std::time::Duration::from_millis(16),
-            ),
+            _ => glutin::event_loop::ControlFlow::Wait,
         }
     });
 }
