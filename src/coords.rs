@@ -122,6 +122,29 @@ impl LodVec for QuadVec {
         // check if the target is inside of the bounding box
         local.0 >= min.0 && local.0 < max.0 && local.1 >= min.1 && local.1 < max.1
     }
+
+    fn is_inside_AABB(self, min: Self, max: Self) -> bool {
+        // get the lowest lod level
+        let level = self.depth.max(min.depth.max(max.depth));
+
+        // bring all coords to the lowest level
+        let self_difference = level - self.depth;
+        let min_difference = level - min.depth;
+        let max_difference = level - max.depth;
+
+        // get the coords to that level
+        let self_x = self.x << self_difference;
+        let self_y = self.y << self_difference;
+
+        let min_x = self.x << min_difference;
+        let min_y = self.y << min_difference;
+
+        let max_x = self.x << max_difference;
+        let max_y = self.y << max_difference;
+
+        // then check if we are inside the AABB
+        self_x >= min_x && self_x <= max_x && self_y >= min_y && self_y <= max_y
+    }
 }
 
 /// A Lod Vector for use in an octree.
@@ -287,5 +310,36 @@ impl LodVec for OctVec {
             && local.1 < max.1
             && local.2 >= min.2
             && local.2 < max.2
+    }
+
+    fn is_inside_AABB(self, min: Self, max: Self) -> bool {
+        // get the lowest lod level
+        let level = self.depth.max(min.depth.max(max.depth));
+
+        // bring all coords to the lowest level
+        let self_difference = level - self.depth;
+        let min_difference = level - min.depth;
+        let max_difference = level - max.depth;
+
+        // get the coords to that level
+        let self_x = self.x << self_difference;
+        let self_y = self.y << self_difference;
+        let self_z = self.z << self_difference;
+
+        let min_x = self.x << min_difference;
+        let min_y = self.y << min_difference;
+        let min_z = self.z << min_difference;
+
+        let max_x = self.x << max_difference;
+        let max_y = self.y << max_difference;
+        let max_z = self.z << max_difference;
+
+        // then check if we are inside the AABB
+        self_x >= min_x
+            && self_x <= max_x
+            && self_y >= min_y
+            && self_y <= max_y
+            && self_z >= min_z
+            && self_z <= max_z
     }
 }

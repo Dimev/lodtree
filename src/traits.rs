@@ -57,4 +57,7 @@ pub trait LodVec: Ord + Sized + Copy + Clone + Send + Sync + Default {
     /// # }
     /// ```
     fn can_subdivide(self, node: Self, detail: u64) -> bool;
+
+    /// check if this chunk is inside of a bounding box
+    fn is_inside_AABB(self, min: Self, max: Self) -> bool;
 }

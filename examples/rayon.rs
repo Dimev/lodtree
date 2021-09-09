@@ -3,6 +3,8 @@ use lodtree::*;
 use rayon::prelude::*;
 
 struct Chunk {
+    // data to store in the chunk, for EG storing voxel or heighmap data
+    // if you don't use editing, storing this data isn't needed, and only storing the mesh would be enough
     data: [f32; 4096], // this amount of data actually makes it slower. To see the true octree speed, replace this with [f32; 0]
 }
 
