@@ -113,10 +113,10 @@
 //! ```
 
 pub mod coords;
+pub mod iter;
 pub mod traits;
 pub mod tree;
-pub mod iter;
 
+pub use crate::iter::*;
 pub use crate::traits::*;
 pub use crate::tree::*;
-pub use crate::iter::*;

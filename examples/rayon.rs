@@ -31,7 +31,7 @@ fn main() {
     // create an octree
     let mut tree = Tree::<Chunk, OctVec>::new();
 
-    // the game loop that runs for 100 iterations
+    // the game loop that runs for 42 iterations
     for _ in 0..42 {
         let start_time = std::time::Instant::now();
 
@@ -75,12 +75,9 @@ fn main() {
             println!("Took {} microseconds to execute the update", duration);
         }
 
-		let duration = start_time.elapsed().as_micros();
+        let duration = start_time.elapsed().as_micros();
 
-		println!(
-			"Took {} microseconds to do the entire update",
-			duration
-		);
+        println!("Took {} microseconds to do the entire update", duration);
 
         // and print some data about the run
         println!("Num chunks in the tree: {}", tree.get_num_chunks());

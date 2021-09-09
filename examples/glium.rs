@@ -127,7 +127,6 @@ fn main() {
 
         // go over all chunks, iterator version
         for chunk in tree.iter_chunks() {
-
             if chunk.visible {
                 // draw it if it's visible
                 // here we get the chunk position and size
@@ -157,26 +156,24 @@ fn main() {
 
     draw((0.5, 0.5), &mut tree, &display);
 
-	// the mouse cursor position
-	let mut mouse_pos = (0.5, 0.5);
+    // the mouse cursor position
+    let mut mouse_pos = (0.5, 0.5);
 
-	// last time redraw was done
-	let mut last_redraw = std::time::Instant::now();
+    // last time redraw was done
+    let mut last_redraw = std::time::Instant::now();
 
     // run the main loop
     event_loop.run(move |event, _, control_flow| {
         *control_flow = match event {
-			glutin::event::Event::RedrawRequested(_) => {
+            glutin::event::Event::RedrawRequested(_) => {
+                // and draw, if enough time elapses
+                if last_redraw.elapsed().as_millis() > 16 {
+                    draw(mouse_pos, &mut tree, &display);
+                    last_redraw = std::time::Instant::now();
+                }
 
-				// and draw, if enough time elapses
-				if last_redraw.elapsed().as_millis() > 16 {
-					draw(mouse_pos, &mut tree, &display);
-					last_redraw = std::time::Instant::now();
-				}
-
-				glutin::event_loop::ControlFlow::Wait
-
-			},
+                glutin::event_loop::ControlFlow::Wait
+            }
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 // stop if the window is closed
                 glutin::event::WindowEvent::CloseRequested => glutin::event_loop::ControlFlow::Exit,
@@ -187,8 +184,8 @@ fn main() {
                         position.y / display.get_framebuffer_dimensions().1 as f64,
                     );
 
-					// request a redraw
-					display.gl_window().window().request_redraw();
+                    // request a redraw
+                    display.gl_window().window().request_redraw();
 
                     glutin::event_loop::ControlFlow::Wait
                 }
