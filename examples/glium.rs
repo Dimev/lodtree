@@ -81,13 +81,13 @@ fn main() {
         fragment: "
 			#version 140
 
-			uniform bool was_cached;
+			uniform int was_cached;
 
 			out vec4 gl_FragColor;
 
 			void main() {
 
-				gl_FragColor = was_cached ? vec4(1.0, 0.5, 0.5, 1.0) : vec4(0.8, 0.8, 0.8, 1.0);
+				gl_FragColor = was_cached != 0 ? vec4(1.0, 0.5, 0.5, 1.0) : vec4(0.8, 0.8, 0.8, 1.0);
 			}
 		"
     }
@@ -145,7 +145,7 @@ fn main() {
                 let uniforms = uniform! {
                     offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
                     scale: chunk.position.get_size() as f32,
-					cached: chunk.was_cached,
+					was_cached: chunk.was_cached as i32,
                 };
 
                 // draw it with glium
@@ -165,7 +165,7 @@ fn main() {
     };
 
     // set up the tree
-    let mut tree = Tree::<Chunk, QuadVec>::new(64);
+    let mut tree = Tree::<Chunk, QuadVec>::new(256);
 
     draw((0.5, 0.5), &mut tree, &display);
 
