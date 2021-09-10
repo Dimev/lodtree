@@ -8,7 +8,7 @@ use lodtree::*;
 struct Chunk {
     position: QuadVec,
     visible: bool,
-	was_cached: bool,
+	cache_state: i32, // 0 is new, 1 is merged, 2 is cached, 3 is both
 }
 
 fn main() {
@@ -81,13 +81,17 @@ fn main() {
         fragment: "
 			#version 140
 
-			uniform int was_cached;
+			uniform int state;
 
 			out vec4 gl_FragColor;
 
 			void main() {
 
-				gl_FragColor = was_cached != 0 ? vec4(1.0, 0.5, 0.5, 1.0) : vec4(0.8, 0.8, 0.8, 1.0);
+				if (state == 0) gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0); // new, white
+				if (state == 1) gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0); // merged, green
+				if (state == 2) gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0); // from cache, red
+				if (state == 3) gl_FragColor = vec4(1.0, 1.0, 0.5, 1.0); // both, yellow
+
 			}
 		"
     }
@@ -109,12 +113,13 @@ fn main() {
             |position| Chunk {
                 position,
                 visible: true,
-				was_cached: false,
+				cache_state: 0,
             },
         ) {
             // position should already have been set, so we can just change the visibility
             for i in 0..tree.get_num_chunks_to_activate() {
                 tree.get_chunk_to_activate_mut(i).visible = true;
+                tree.get_chunk_to_activate_mut(i).cache_state |= 1;
             }
 
             for i in 0..tree.get_num_chunks_to_deactivate() {
@@ -123,7 +128,7 @@ fn main() {
 
 			// and make chunks that are cached visible
 			for i in 0..tree.get_num_chunks_to_remove() {
-				tree.get_chunk_to_remove_mut(i).was_cached = true;
+				tree.get_chunk_to_remove_mut(i).cache_state = 2;
 			}
 
             // do the update
@@ -145,7 +150,7 @@ fn main() {
                 let uniforms = uniform! {
                     offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
                     scale: chunk.position.get_size() as f32,
-					was_cached: chunk.was_cached as i32,
+					state: chunk.cache_state,
                 };
 
                 // draw it with glium
