@@ -165,7 +165,7 @@ fn main() {
     };
 
     // set up the tree
-    let mut tree = Tree::<Chunk, QuadVec>::new(256);
+    let mut tree = Tree::<Chunk, QuadVec>::new(64);
 
     draw((0.5, 0.5), &mut tree, &display);
 
