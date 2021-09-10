@@ -8,6 +8,7 @@ use lodtree::*;
 struct Chunk {
     position: QuadVec,
     visible: bool,
+	was_cached: bool,
 }
 
 fn main() {
@@ -80,11 +81,13 @@ fn main() {
         fragment: "
 			#version 140
 
+			uniform bool was_cached;
+
 			out vec4 gl_FragColor;
 
 			void main() {
 
-				gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
+				gl_FragColor = was_cached ? vec4(1.0, 0.5, 0.5, 1.0) : vec4(0.8, 0.8, 0.8, 1.0);
 			}
 		"
     }
@@ -106,6 +109,7 @@ fn main() {
             |position| Chunk {
                 position,
                 visible: true,
+				was_cached: false,
             },
         ) {
             // position should already have been set, so we can just change the visibility
@@ -117,8 +121,16 @@ fn main() {
                 tree.get_chunk_to_deactivate_mut(i).visible = false;
             }
 
+			// and make chunks that are cached visible
+			for i in 0..tree.get_num_chunks_to_remove() {
+				tree.get_chunk_to_remove_mut(i).was_cached = true;
+			}
+
             // do the update
             tree.do_update();
+
+			// and clean
+			tree.complete_update();
         }
 
         // and, Redraw!
@@ -133,6 +145,7 @@ fn main() {
                 let uniforms = uniform! {
                     offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
                     scale: chunk.position.get_size() as f32,
+					cached: chunk.was_cached,
                 };
 
                 // draw it with glium
@@ -152,7 +165,7 @@ fn main() {
     };
 
     // set up the tree
-    let mut tree = Tree::<Chunk, QuadVec>::new();
+    let mut tree = Tree::<Chunk, QuadVec>::new(64);
 
     draw((0.5, 0.5), &mut tree, &display);
 

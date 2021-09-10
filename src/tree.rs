@@ -2,7 +2,7 @@
 
 use crate::traits::*;
 
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroUsize;
 
 // struct for keeping track of chunks
@@ -65,6 +65,18 @@ where
 
     /// internal queue for processing, that way we won't need to reallocate it
     processing_queue: Vec<(L, usize)>,
+
+    /// cache size, determines the max amount of elements in the cache
+    cache_size: usize,
+
+    /// internal chunk cache
+    chunk_cache: BTreeMap<L, C>,
+
+    /// tracking queue, to see which chunks are oldest
+    cache_queue: VecDeque<L>,
+	
+    /// chunks that are going to be permamently removed, due to not fitting in the cache anymore
+    chunks_to_delete: Vec<(L, C)>,
     // TODO: see if we can do caching
     // this at least requires also giving chunks their positions in the tree, and probably expose those via a getter as well
     // getters should return either, or both, both mutable and immutable
@@ -82,7 +94,7 @@ where
     L: LodVec,
 {
     /// create a new, empty tree
-    pub fn new() -> Self {
+    pub fn new(cache_size: usize) -> Self {
         // make a new Tree
         // also allocate some room for nodes
         Self {
@@ -95,6 +107,10 @@ where
             nodes: Vec::with_capacity(512),
             free_list: VecDeque::with_capacity(512),
             processing_queue: Vec::with_capacity(512),
+            cache_size,
+            chunk_cache: BTreeMap::new(),
+            cache_queue: VecDeque::with_capacity(cache_size),
+            chunks_to_delete: Vec::with_capacity(cache_size),
         }
     }
 
@@ -255,9 +271,11 @@ where
 
         // if we don't have a root, make one pending for creation
         if self.nodes.is_empty() {
+            // chunk to add
+            let chunk_to_add = self.get_chunk_from_cache(L::root(), chunk_creator);
+
             // we need to add the root as pending
-            self.chunks_to_add
-                .push((L::root(), chunk_creator(L::root())));
+            self.chunks_to_add.push((L::root(), chunk_to_add));
 
             // and the parent
             self.chunks_to_add_parent.push(0);
@@ -286,11 +304,13 @@ where
             if can_subdivide && current_node.children.is_none() {
                 // add children to be added
                 for i in 0..L::num_children() {
+                    // chunk to add
+                    let chunk_to_add =
+                        self.get_chunk_from_cache(current_position.get_child(i), chunk_creator);
+
                     // add the new chunk to be added
-                    self.chunks_to_add.push((
-                        current_position.get_child(i),
-                        chunk_creator(current_position.get_child(i)),
-                    ));
+                    self.chunks_to_add
+                        .push((current_position.get_child(i), chunk_to_add));
 
                     // and add the parent
                     self.chunks_to_add_parent.push(current_node_index);
@@ -310,8 +330,7 @@ where
 
                     for i in 0..L::num_children() {
                         // no need to do this in reverse, that way the last node removed will be added to the free list, which is also the first thing used by the adding logic
-                        self.chunks_to_remove
-                            .push((index.get() + i, current_node_index));
+                        self.chunks_to_remove.push((index.get() + i, current_node_index));
                     }
                 } else {
                     // queue child nodes for processing if we didn't subdivide or clean up our children
@@ -327,9 +346,10 @@ where
         !self.chunks_to_add.is_empty() || !self.chunks_to_remove.is_empty()
     }
 
-    /// runs the update that's stored in the internal lists.
-    /// this adds and removes chunks based on that, however this assumes that chunks in the to_activate and to_deactivate list were manually activated or deactivated.
-    /// this also assumes that the chunks in to_add had proper initialization, as they are added to the tree.
+    /// Runs the update that's stored in the internal lists.
+    /// This adds and removes chunks based on that, however this assumes that chunks in the to_activate and to_deactivate list were manually activated or deactivated.
+    /// This also assumes that the chunks in to_add had proper initialization, as they are added to the tree.
+	/// After this, it's needed to clean un nodes in the chunk_to_delete list and call the function complete_update(), in order to properly clear the cache
     pub fn do_update(&mut self) {
         // no need to do anything with chunks that needed to be (de)activated, as we assume that has been handled beforehand
 
@@ -340,9 +360,13 @@ where
             .drain(..)
             .zip(self.chunks_to_add.drain(..));
 
-        // then, remove old chunks
+        // then, remove old chunks, or cache them
         // we'll drain the vector, as we don't need it anymore afterward
-        for (index, parent_index) in self.chunks_to_remove.drain(..) {
+        for (index, parent_index) in self
+            .chunks_to_remove
+            .drain(..)
+        // but we do need to cache these
+        {
             // remove the node from the tree
             self.nodes[parent_index].children = None;
             self.free_list.push_back(index);
@@ -361,26 +385,50 @@ where
                             children: None,
                             chunk: chunk_index,
                         };
-                        self.chunks[chunk_index] = ChunkContainer {
+
+                        // old chunk that was previously in the array
+                        // we initialize it to the new chunk, then swap them
+                        let mut old_chunk = ChunkContainer {
                             index: x,
                             chunk,
                             position,
                         };
+
+                        std::mem::swap(&mut old_chunk, &mut self.chunks[chunk_index]);
+
+						// old chunk shouldn't be mutable anymore
+						let old_chunk = old_chunk;
+
+						// now, we can try to add this chunk into the cache
+						// first, remove any extra nodes if they are in the cache
+						while self.chunk_cache.len() > self.cache_size {
+							if let Some(chunk_position) = self.cache_queue.pop_front() {
+
+								// check if the chunk is inside the map
+								if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
+									// if it is, it's removed, so we need to push it to the chunks that are going to be deleted
+									self.chunks_to_delete.push((chunk_position, cached_chunk));
+								}
+
+							} else {
+								// just break, otherwise we'll be stuck in an infinite loop
+								break;
+							}
+						}
+
+						// then assign this chunk into the cache
+						if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk) {
+							// there might have been another cached chunk
+							self.chunks_to_delete.push((old_chunk.position, cached_chunk));
+						}
+
+						// and make sure it's tracked
+						self.cache_queue.push_back(old_chunk.position);
+
                         x
                     }
-                    None => {
-                        // otherwise, use a new index
-                        self.nodes.push(TreeNode {
-                            children: None,
-                            chunk: chunk_index,
-                        });
-                        self.chunks[chunk_index] = ChunkContainer {
-                            index: self.nodes.len() - 1,
-                            chunk,
-                            position,
-                        };
-                        self.nodes.len() - 1
-                    }
+                    // This can't be reached due to us *always* adding a chunk to the free list before popping it
+                    None => unsafe { std::hint::unreachable_unchecked() },
                 };
 
                 // correctly set the children of the parent node.
@@ -395,7 +443,33 @@ where
                 }
             } else {
                 // otherwise we do need to do a regular swap remove
-                self.chunks.swap_remove(chunk_index);
+                let old_chunk = self.chunks.swap_remove(chunk_index);
+				
+				// now, we can try to add this chunk into the cache
+				// first, remove any extra nodes if they are in the cache
+				while self.chunk_cache.len() > self.cache_size {
+					if let Some(chunk_position) = self.cache_queue.pop_front() {
+
+						// check if the chunk is inside the map
+						if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
+							// if it is, it's removed, so we need to push it to the chunks that are going to be deleted
+							self.chunks_to_delete.push((chunk_position, cached_chunk));
+						}
+
+					} else {
+						// just break, otherwise we'll be stuck in an infinite loop
+						break;
+					}
+				}
+
+				// then assign this chunk into the cache
+				if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk) {
+					// there might have been another cached chunk
+					self.chunks_to_delete.push((old_chunk.position, cached_chunk));
+				}
+
+				// and make sure it's tracked
+				self.cache_queue.push_back(old_chunk.position);
             }
 
             // and properly set the chunk pointer of the node of the chunk we just moved, if any
@@ -469,7 +543,14 @@ where
         self.chunks_to_deactivate.clear();
     }
 
-    /// clears the tree, removing all chunks and internal lists
+	pub fn complete_update(&mut self) {
+
+		// just clear the chunks to be deleted
+		self.chunks_to_delete.clear();
+
+	}
+
+    /// clears the tree, removing all chunks and internal lists and cache
     pub fn clear(&mut self) {
         self.chunks.clear();
         self.nodes.clear();
@@ -479,6 +560,8 @@ where
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
         self.processing_queue.clear();
+		self.cache_queue.clear();
+		self.chunk_cache.clear();
     }
 
     /// Shrinks all internal buffers to fit, reducing memory usage.
@@ -493,6 +576,15 @@ where
         self.chunks_to_deactivate.shrink_to_fit();
         self.processing_queue.shrink_to_fit();
     }
+
+    // gets a chunk from the cache, otehrwise generates one from the given function
+    fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
+        if let Some(chunk) = self.chunk_cache.remove(&position) {
+            chunk
+        } else {
+            chunk_creator(position)
+        }
+    }
 }
 
 impl<C, L> Default for Tree<C, L>
@@ -500,9 +592,9 @@ where
     C: Sized,
     L: LodVec,
 {
-    /// creates a new, empty tree
+    /// creates a new, empty tree, with no cache
     fn default() -> Self {
-        Self::new()
+        Self::new(0)
     }
 }
 
@@ -517,7 +609,7 @@ mod tests {
     #[test]
     fn new_tree() {
         // make a tree
-        let mut tree = Tree::<TestChunk, QuadVec>::new();
+        let mut tree = Tree::<TestChunk, QuadVec>::new(64);
 
         // as long as we need to update, do so
         while tree.prepare_update(&[QuadVec::new(128, 128, 32)], 8, |_| TestChunk {}) {
@@ -538,7 +630,7 @@ mod tests {
         }
 
         // and do the same for an octree
-        let mut tree = Tree::<TestChunk, OctVec>::new();
+        let mut tree = Tree::<TestChunk, OctVec>::new(64);
 
         // as long as we need to update, do so
         while tree.prepare_update(&[OctVec::new(128, 128, 128, 32)], 8, |_| TestChunk {}) {

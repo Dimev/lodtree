@@ -31,7 +31,7 @@ impl Chunk {
 
 fn main() {
     // create an octree
-    let mut tree = Tree::<Chunk, OctVec>::new();
+    let mut tree = Tree::<Chunk, OctVec>::new(512);
 
     // the game loop that runs for 42 iterations
     for _ in 0..42 {
@@ -71,6 +71,12 @@ fn main() {
 
             // and don't forget to actually run the update
             tree.do_update();
+
+			// now we probably want to truly clean up the chunks that are going to be deleted from memory
+
+
+			// and actually clean them up
+			tree.complete_update();
 
             let duration = start_time.elapsed().as_micros();
 
