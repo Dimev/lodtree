@@ -4,7 +4,7 @@ use crate::traits::LodVec;
 
 /// A Lod Vector for use in a quadtree.
 /// It subdivides into 4 children of equal size.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
 pub struct QuadVec {
     /// x position in the quadtree.
     pub x: u64,
@@ -149,7 +149,7 @@ impl LodVec for QuadVec {
 
 /// A Lod Vector for use in an octree.
 /// It subdivides into 8 children of equal size.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
 pub struct OctVec {
     /// x position in the octree.
     pub x: u64,

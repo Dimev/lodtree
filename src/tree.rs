@@ -2,7 +2,7 @@
 
 use crate::traits::*;
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::num::NonZeroUsize;
 
 // struct for keeping track of chunks
@@ -70,22 +70,13 @@ where
     cache_size: usize,
 
     /// internal chunk cache
-    chunk_cache: BTreeMap<L, C>,
+    chunk_cache: HashMap<L, C>,
 
     /// tracking queue, to see which chunks are oldest
     cache_queue: VecDeque<L>,
 	
     /// chunks that are going to be permamently removed, due to not fitting in the cache anymore
     chunks_to_delete: Vec<(L, C)>,
-    // TODO: see if we can do caching
-    // this at least requires also giving chunks their positions in the tree, and probably expose those via a getter as well
-    // getters should return either, or both, both mutable and immutable
-    // a new array with "chunks to delete" would be added for chunks that are going to be permanently deleted
-    // this could also just be the btreemap combined with the cache tracker, hidden behind a get function
-
-    // another internal function should be pop_cached_chunk, which gets (and removes) a cached chunk
-    // and an exposed function should be cleanup, and iterators for deleted chunks (from the cache)
-    // so that these can properly be removed
 }
 
 impl<C, L> Tree<C, L>
@@ -108,7 +99,7 @@ where
             free_list: VecDeque::with_capacity(512),
             processing_queue: Vec::with_capacity(512),
             cache_size,
-            chunk_cache: BTreeMap::new(),
+            chunk_cache: HashMap::with_capacity(cache_size),
             cache_queue: VecDeque::with_capacity(cache_size),
             chunks_to_delete: Vec::with_capacity(cache_size),
         }
@@ -604,6 +595,7 @@ where
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
+		self.chunks_to_delete.clear();
         self.processing_queue.clear();
 		self.cache_queue.clear();
 		self.chunk_cache.clear();
@@ -621,6 +613,12 @@ where
         self.chunks_to_deactivate.shrink_to_fit();
         self.processing_queue.shrink_to_fit();
     }
+
+	/// resizes the current cache size
+	/// actual resizing happens on the next update
+	pub fn set_cache_size(&mut self, cache_size: usize) {
+		self.cache_size = cache_size;
+	}
 
     // gets a chunk from the cache, otehrwise generates one from the given function
     fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
