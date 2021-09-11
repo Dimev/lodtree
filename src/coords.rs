@@ -123,7 +123,7 @@ impl LodVec for QuadVec {
         local.0 >= min.0 && local.0 < max.0 && local.1 >= min.1 && local.1 < max.1
     }
 
-    fn is_inside_AABB(self, min: Self, max: Self) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self) -> bool {
         // get the lowest lod level
         let level = self.depth.max(min.depth.max(max.depth));
 
@@ -143,7 +143,7 @@ impl LodVec for QuadVec {
         let max_y = self.y << max_difference;
 
         // then check if we are inside the AABB
-        self_x >= min_x && self_x <= max_x && self_y >= min_y && self_y <= max_y
+        self_x >= min_x && self_x < max_x && self_y >= min_y && self_y < max_y
     }
 }
 
@@ -312,7 +312,7 @@ impl LodVec for OctVec {
             && local.2 < max.2
     }
 
-    fn is_inside_AABB(self, min: Self, max: Self) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self) -> bool {
         // get the lowest lod level
         let level = self.depth.max(min.depth.max(max.depth));
 
@@ -336,10 +336,10 @@ impl LodVec for OctVec {
 
         // then check if we are inside the AABB
         self_x >= min_x
-            && self_x <= max_x
+            && self_x < max_x
             && self_y >= min_y
-            && self_y <= max_y
+            && self_y < max_y
             && self_z >= min_z
-            && self_z <= max_z
+            && self_z < max_z
     }
 }

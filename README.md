@@ -55,7 +55,7 @@ First, we want to process all chunks that are going to be added.
 This is the only thing the API exposes as a slice, so we can nicely iterate over that in parallel with rayon.
 ```rust
 tree.get_chunks_to_add_slice_mut()
-	.par_iter_mut()
+	.iter_mut() // or par_iter_mut if you're using rayon
 	.for_each(|(position, chunk)| {
 
 		// and run expensive init, probably does something with procedural generation
@@ -80,11 +80,21 @@ for i in 0..tree.get_num_chunks_to_remove() {
 	tree.get_chunk_to_remove_mut(i).cleanup();
 } 
 ```
-
 And finally, actually update the tree with the new chunks.
 Note that it's likely needed to do the prepare_update and do_update cycle a number of times before no new chunks need to be added, as the tree only adds one lod level at a time.
 ```rust
 tree.do_update();
+```
+But we're not done yet!
+After this step there's a number of chunks that are removed from the cache, and will not be added back into the tree
+We'll want to clean those up now
+```rust
+for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
+	chunk.true_cleanup();
+}
+
+// and finally, complete the entire update
+tree.complete_update();
 ```
 
 ### Roadmap

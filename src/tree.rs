@@ -132,6 +132,12 @@ where
         &mut self.chunks[index].chunk
     }
 
+	/// get the position of a chunk
+	#[inline]
+	pub fn get_chunk_position(&self, index: usize) -> L {
+		self.chunks[index].position
+	}
+
     /// get the number of chunks pending activation
     #[inline]
     pub fn get_num_chunks_to_activate(&self) -> usize {
@@ -148,6 +154,12 @@ where
     #[inline]
     pub fn get_chunk_to_activate_mut(&mut self, index: usize) -> &mut C {
         &mut self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].chunk
+    }
+
+	/// get the position of a chunk pending activation
+    #[inline]
+    pub fn get_position_of_chunk_to_activate(&self, index: usize) -> L {
+        self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].position
     }
 
     /// get the number of chunks pending deactivation
@@ -168,6 +180,12 @@ where
         &mut self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].chunk
     }
 
+	/// get the position of a chunk pending deactivation
+    #[inline]
+    pub fn get_position_of_chunk_to_deactivate(&self, index: usize) -> L {
+        self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].position
+    }
+
     /// get the number of chunks pending removal
     #[inline]
     pub fn get_num_chunks_to_remove(&self) -> usize {
@@ -186,16 +204,16 @@ where
         &mut self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].chunk
     }
 
+	/// get the position of a chunk pending removal
+    #[inline]
+    pub fn get_position_of_chunk_to_remove(&self, index: usize) -> L {
+        self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].position
+    }
+
     /// get the number of chunks to be added
     #[inline]
     pub fn get_num_chunks_to_add(&self) -> usize {
         self.chunks_to_add.len()
-    }
-
-    /// get the position of a chunk that's going to be added
-    #[inline]
-    pub fn get_position_of_chunk_to_add(&self, index: usize) -> L {
-        self.chunks_to_add[index].0
     }
 
     /// get a chunk that's going to be added
@@ -204,25 +222,16 @@ where
         &self.chunks_to_add[index].1
     }
 
-    /// get a position and the associated mutable chunk that's going to be added
-    #[inline]
-    pub fn get_position_and_chunk_to_add_mut(&mut self, index: usize) -> (L, &mut C) {
-        (
-            self.chunks_to_add[index].0,
-            &mut self.chunks_to_add[index].1,
-        )
-    }
-
-    /// get a position and the associated chunk that's going to be added
-    #[inline]
-    pub fn get_position_and_chunk_to_add(&self, index: usize) -> (L, &C) {
-        (self.chunks_to_add[index].0, &self.chunks_to_add[index].1)
-    }
-
     /// get a mutable chunk that's going to be added
     #[inline]
     pub fn get_chunk_to_add_mut(&mut self, index: usize) -> &mut C {
         &mut self.chunks_to_add[index].1
+    }
+
+	/// get the position of a chunk that's going to be added
+    #[inline]
+    pub fn get_position_of_chunk_to_add(&self, index: usize) -> L {
+        self.chunks_to_add[index].0
     }
 
     /// gets the positions and chunks to be added as a slice
@@ -235,6 +244,42 @@ where
     #[inline]
     pub fn get_chunks_to_add_slice_mut(&mut self) -> &mut [(L, C)] {
         &mut self.chunks_to_add[..]
+    }
+
+	/// get the number of chunks to be delete
+    #[inline]
+    pub fn get_num_chunks_to_delete(&self) -> usize {
+        self.chunks_to_delete.len()
+    }
+
+    /// get a chunk that's going to be delete
+    #[inline]
+    pub fn get_chunk_to_delete(&self, index: usize) -> &C {
+        &self.chunks_to_delete[index].1
+    }
+
+    /// get a mutable chunk that's going to be delete
+    #[inline]
+    pub fn get_chunk_to_delete_mut(&mut self, index: usize) -> &mut C {
+        &mut self.chunks_to_delete[index].1
+    }
+
+	/// get the position of a chunk that's going to be delete
+    #[inline]
+    pub fn get_position_of_chunk_to_delete(&self, index: usize) -> L {
+        self.chunks_to_delete[index].0
+    }
+
+    /// gets the positions and chunks to be delete as a slice
+    #[inline]
+    pub fn get_chunks_to_delete_slice(&self) -> &[(L, C)] {
+        &self.chunks_to_delete[..]
+    }
+
+    /// gets the positions and chunks to be delete as a mutable slice
+    #[inline]
+    pub fn get_chunks_to_delete_slice_mut(&mut self) -> &mut [(L, C)] {
+        &mut self.chunks_to_delete[..]
     }
 
     // how it works:

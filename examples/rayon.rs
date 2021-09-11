@@ -27,6 +27,9 @@ impl Chunk {
 
     // and pretend this makes chunks visible/invisible
     fn set_visible(&mut self, _visibility: bool) {}
+
+	// and pretend this drops anything for when a chunk is permanently deleted
+	fn cleanup(&mut self) {}
 }
 
 fn main() {
@@ -73,7 +76,9 @@ fn main() {
             tree.do_update();
 
 			// now we probably want to truly clean up the chunks that are going to be deleted from memory
-
+			for (_, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
+				chunk.cleanup();
+			}
 
 			// and actually clean them up
 			tree.complete_update();

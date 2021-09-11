@@ -43,11 +43,12 @@
 //! # use lodtree::*;
 //! # use lodtree::coords::OctVec;
 //! # struct Chunk {}
-//! # let mut tree = Tree::<Chunk, OctVec>::new();
+//! # let mut tree = Tree::<Chunk, OctVec>::new(64);
 //! let needs_updating = tree.prepare_update(
 //! 	&[OctVec::new(8, 8, 8, 8)], // the target positions to generate the lod around
 //! 	4, // amount of detail
 //! 	|pos| Chunk {} // and the function to construct the chunk with
+//!                    // NOTE: this is only called for completely new chunks, not the ones loaded from the chunk cache!
 //! );
 //! ```
 //!
@@ -90,6 +91,7 @@
 //! }
 //! ```
 //! We'll probably also want to do some cleanup with chunks that are removed.
+//! Note that these are not permanently removed, but are instead added to a cache, so it's possible that these chunks come back in the tree
 //! ```rust
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
@@ -111,6 +113,25 @@
 //! # let mut tree = Tree::<Chunk, QuadVec>::new();
 //! tree.do_update();
 //! ```
+//! But we're not done yet!
+//! After this step there's a number of chunks that are removed from the cache, and will not be added back into the tree
+//! We'll want to clean those up now
+//! ```rust
+//! # use lodtree::*;
+//! # use lodtree::coords::QuadVec;
+//! # struct Chunk {}
+//! # impl Chunk {
+//! #     fn true_cleanup(&mut self) {}
+//! # }
+//! # let mut tree = Tree::<Chunk, QuadVec>::new();
+//! for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
+//! 	chunk.true_cleanup();
+//! }
+//! 
+//! // and finally, complete the entire update
+//! tree.complete_update();
+//! ```
+
 
 pub mod coords;
 pub mod iter;
