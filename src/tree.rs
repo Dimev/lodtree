@@ -18,7 +18,7 @@ struct TreeNode {
 }
 
 // utility struct for holding actual chunks and the node that owns them
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct ChunkContainer<C, L>
 where
     C: Sized,
@@ -32,7 +32,7 @@ where
 // Tree holding all chunks
 // partially based on: https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
 // assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Tree<C, L>
 where
     C: Sized,
@@ -579,6 +579,8 @@ where
         self.chunks_to_deactivate.clear();
     }
 
+	/// Completes the update by removing all chunks that can't be stored anymore permanently
+	#[inline]
 	pub fn complete_update(&mut self) {
 
 		// just clear the chunks to be deleted
@@ -587,6 +589,7 @@ where
 	}
 
     /// clears the tree, removing all chunks and internal lists and cache
+	#[inline]
     pub fn clear(&mut self) {
         self.chunks.clear();
         self.nodes.clear();
@@ -603,7 +606,8 @@ where
 
     /// Shrinks all internal buffers to fit, reducing memory usage.
     /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory.
-    pub fn shrink(&mut self) {
+	#[inline]
+	pub fn shrink(&mut self) {
         self.chunks.shrink_to_fit();
         self.nodes.shrink_to_fit();
         self.free_list.shrink_to_fit();
@@ -616,12 +620,14 @@ where
 
 	/// resizes the current cache size
 	/// actual resizing happens on the next update
+	#[inline]
 	pub fn set_cache_size(&mut self, cache_size: usize) {
 		self.cache_size = cache_size;
 	}
 
     // gets a chunk from the cache, otehrwise generates one from the given function
-    fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
+	#[inline]
+	fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
         if let Some(chunk) = self.chunk_cache.remove(&position) {
             chunk
         } else {
