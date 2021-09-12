@@ -157,6 +157,31 @@ impl_iterator!(
 );
 // TODO: iterator for all
 
+// iterator for all chunks that are inside given bounds
+pub struct EditedChunksIter<L: LodVec> {
+	// internal stack for which chunks are next
+	stack: Vec<L>
+}
+
+impl<L: LodVec> Iterator for EditedChunksIter<L> {
+	type Item = L;
+
+	fn next(&mut self) -> Option<Self::Item> {
+
+		if let Some(current) = self.stack.pop() {
+
+			// go over all child nodes
+			// if they are in bounds, and the correct depth, add them to the stack
+
+			// and return this item from the stack
+			Some(current)
+		} else {
+			None
+		}
+		
+	}
+}
+
 impl<'a, C, L> Tree<C, L>
 where
     C: Sized,

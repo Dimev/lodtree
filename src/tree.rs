@@ -117,6 +117,8 @@ where
         &self.chunks[index].chunk
     }
 
+	// TODO: get a chunk by position
+
     /// get a chunk as mutable
     #[inline]
     pub fn get_chunk_mut(&mut self, index: usize) -> &mut C {
