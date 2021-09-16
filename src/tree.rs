@@ -74,7 +74,7 @@ where
 
     /// tracking queue, to see which chunks are oldest
     cache_queue: VecDeque<L>,
-	
+
     /// chunks that are going to be permamently removed, due to not fitting in the cache anymore
     chunks_to_delete: Vec<(L, C)>,
 }
@@ -117,7 +117,44 @@ where
         &self.chunks[index].chunk
     }
 
-	// TODO: get a chunk by position
+    /// get a chunk by position
+    #[inline]
+    pub fn get_chunk_from_position(&self, position: L) -> Option<&C> {
+        // the current node
+        let mut current = *self.nodes.get(0)?;
+
+        // and position
+        let mut current_position = L::root();
+
+        // then loop
+        loop {
+
+			// if the current node does not have children, stop
+			if current.children.is_none() {
+				return None;
+			}
+
+            // if the current node is the one we are looking for, return
+            if current_position == position {
+                return Some(&self.chunks[current.chunk].chunk);
+            }
+
+            // if not, go over the node children
+            if let Some((index, found_position)) = (0..L::num_children())
+                .map(|i| (i, current_position.get_child(i)))
+                .find(|(_, x)| x.can_subdivide(position, 0))
+            {
+				// we found the position to go to
+				current_position = found_position;
+
+				// and the node is at the index of the child nodes + index
+				current = self.nodes[current.children.unwrap().get() + index];
+			} else {
+				// if no child got found that matched the item, return none
+				return None;
+			}
+        }
+    }
 
     /// get a chunk as mutable
     #[inline]
@@ -125,11 +162,18 @@ where
         &mut self.chunks[index].chunk
     }
 
-	/// get the position of a chunk
-	#[inline]
-	pub fn get_chunk_position(&self, index: usize) -> L {
-		self.chunks[index].position
-	}
+    /// gets a mutable pointer to a chunk
+    /// This casts get_chunk_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_mut(index)
+    }
+
+    /// get the position of a chunk
+    #[inline]
+    pub fn get_chunk_position(&self, index: usize) -> L {
+        self.chunks[index].position
+    }
 
     /// get the number of chunks pending activation
     #[inline]
@@ -149,7 +193,14 @@ where
         &mut self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].chunk
     }
 
-	/// get the position of a chunk pending activation
+    /// gets a mutable pointer to a chunk that is pending activation
+    /// This casts get_chunk_to_activate_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_to_activate_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_to_activate_mut(index)
+    }
+
+    /// get the position of a chunk pending activation
     #[inline]
     pub fn get_position_of_chunk_to_activate(&self, index: usize) -> L {
         self.chunks[self.nodes[self.chunks_to_activate[index]].chunk].position
@@ -173,7 +224,14 @@ where
         &mut self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].chunk
     }
 
-	/// get the position of a chunk pending deactivation
+    /// gets a mutable pointer to a chunk that is pending deactivation
+    /// This casts get_chunk_to_deactivate_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_to_deactivate_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_to_deactivate_mut(index)
+    }
+
+    /// get the position of a chunk pending deactivation
     #[inline]
     pub fn get_position_of_chunk_to_deactivate(&self, index: usize) -> L {
         self.chunks[self.nodes[self.chunks_to_deactivate[index]].chunk].position
@@ -197,7 +255,14 @@ where
         &mut self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].chunk
     }
 
-	/// get the position of a chunk pending removal
+    /// gets a mutable pointer to a chunk that is pending removal
+    /// This casts get_chunk_to_remove_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_to_remove_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_to_remove_mut(index)
+    }
+
+    /// get the position of a chunk pending removal
     #[inline]
     pub fn get_position_of_chunk_to_remove(&self, index: usize) -> L {
         self.chunks[self.nodes[self.chunks_to_remove[index].0].chunk].position
@@ -221,7 +286,14 @@ where
         &mut self.chunks_to_add[index].1
     }
 
-	/// get the position of a chunk that's going to be added
+    /// gets a mutable pointer to a chunk that is pending to be added
+    /// This casts get_chunk_to_add_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_to_add_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_to_add_mut(index)
+    }
+
+    /// get the position of a chunk that's going to be added
     #[inline]
     pub fn get_position_of_chunk_to_add(&self, index: usize) -> L {
         self.chunks_to_add[index].0
@@ -239,7 +311,7 @@ where
         &mut self.chunks_to_add[..]
     }
 
-	/// get the number of chunks to be delete
+    /// get the number of chunks to be delete
     #[inline]
     pub fn get_num_chunks_to_delete(&self) -> usize {
         self.chunks_to_delete.len()
@@ -257,7 +329,14 @@ where
         &mut self.chunks_to_delete[index].1
     }
 
-	/// get the position of a chunk that's going to be delete
+    /// gets a mutable pointer to a chunk that is pending deletion
+    /// This casts get_chunk_to_delete_mut to a pointer underneath the hood
+    #[inline]
+    pub unsafe fn get_chunk_to_delete_pointer_mut(&mut self, index: usize) -> *mut C {
+        self.get_chunk_to_delete_mut(index)
+    }
+
+    /// get the position of a chunk that's going to be delete
     #[inline]
     pub fn get_position_of_chunk_to_delete(&self, index: usize) -> L {
         self.chunks_to_delete[index].0
@@ -368,7 +447,8 @@ where
 
                     for i in 0..L::num_children() {
                         // no need to do this in reverse, that way the last node removed will be added to the free list, which is also the first thing used by the adding logic
-                        self.chunks_to_remove.push((index.get() + i, current_node_index));
+                        self.chunks_to_remove
+                            .push((index.get() + i, current_node_index));
                     }
                 } else {
                     // queue child nodes for processing if we didn't subdivide or clean up our children
@@ -387,7 +467,7 @@ where
     /// Runs the update that's stored in the internal lists.
     /// This adds and removes chunks based on that, however this assumes that chunks in the to_activate and to_deactivate list were manually activated or deactivated.
     /// This also assumes that the chunks in to_add had proper initialization, as they are added to the tree.
-	/// After this, it's needed to clean un nodes in the chunk_to_delete list and call the function complete_update(), in order to properly clear the cache
+    /// After this, it's needed to clean un nodes in the chunk_to_delete list and call the function complete_update(), in order to properly clear the cache
     pub fn do_update(&mut self) {
         // no need to do anything with chunks that needed to be (de)activated, as we assume that has been handled beforehand
 
@@ -400,9 +480,7 @@ where
 
         // then, remove old chunks, or cache them
         // we'll drain the vector, as we don't need it anymore afterward
-        for (index, parent_index) in self
-            .chunks_to_remove
-            .drain(..)
+        for (index, parent_index) in self.chunks_to_remove.drain(..)
         // but we do need to cache these
         {
             // remove the node from the tree
@@ -434,34 +512,36 @@ where
 
                         std::mem::swap(&mut old_chunk, &mut self.chunks[chunk_index]);
 
-						// old chunk shouldn't be mutable anymore
-						let old_chunk = old_chunk;
+                        // old chunk shouldn't be mutable anymore
+                        let old_chunk = old_chunk;
 
-						// now, we can try to add this chunk into the cache
-						// first, remove any extra nodes if they are in the cache
-						while self.chunk_cache.len() > self.cache_size {
-							if let Some(chunk_position) = self.cache_queue.pop_front() {
+                        // now, we can try to add this chunk into the cache
+                        // first, remove any extra nodes if they are in the cache
+                        while self.chunk_cache.len() > self.cache_size {
+                            if let Some(chunk_position) = self.cache_queue.pop_front() {
+                                // check if the chunk is inside the map
+                                if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position)
+                                {
+                                    // if it is, it's removed, so we need to push it to the chunks that are going to be deleted
+                                    self.chunks_to_delete.push((chunk_position, cached_chunk));
+                                }
+                            } else {
+                                // just break, otherwise we'll be stuck in an infinite loop
+                                break;
+                            }
+                        }
 
-								// check if the chunk is inside the map
-								if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
-									// if it is, it's removed, so we need to push it to the chunks that are going to be deleted
-									self.chunks_to_delete.push((chunk_position, cached_chunk));
-								}
+                        // then assign this chunk into the cache
+                        if let Some(cached_chunk) =
+                            self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
+                        {
+                            // there might have been another cached chunk
+                            self.chunks_to_delete
+                                .push((old_chunk.position, cached_chunk));
+                        }
 
-							} else {
-								// just break, otherwise we'll be stuck in an infinite loop
-								break;
-							}
-						}
-
-						// then assign this chunk into the cache
-						if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk) {
-							// there might have been another cached chunk
-							self.chunks_to_delete.push((old_chunk.position, cached_chunk));
-						}
-
-						// and make sure it's tracked
-						self.cache_queue.push_back(old_chunk.position);
+                        // and make sure it's tracked
+                        self.cache_queue.push_back(old_chunk.position);
 
                         x
                     }
@@ -482,32 +562,33 @@ where
             } else {
                 // otherwise we do need to do a regular swap remove
                 let old_chunk = self.chunks.swap_remove(chunk_index);
-				
-				// now, we can try to add this chunk into the cache
-				// first, remove any extra nodes if they are in the cache
-				while self.chunk_cache.len() > self.cache_size {
-					if let Some(chunk_position) = self.cache_queue.pop_front() {
 
-						// check if the chunk is inside the map
-						if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
-							// if it is, it's removed, so we need to push it to the chunks that are going to be deleted
-							self.chunks_to_delete.push((chunk_position, cached_chunk));
-						}
+                // now, we can try to add this chunk into the cache
+                // first, remove any extra nodes if they are in the cache
+                while self.chunk_cache.len() > self.cache_size {
+                    if let Some(chunk_position) = self.cache_queue.pop_front() {
+                        // check if the chunk is inside the map
+                        if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
+                            // if it is, it's removed, so we need to push it to the chunks that are going to be deleted
+                            self.chunks_to_delete.push((chunk_position, cached_chunk));
+                        }
+                    } else {
+                        // just break, otherwise we'll be stuck in an infinite loop
+                        break;
+                    }
+                }
 
-					} else {
-						// just break, otherwise we'll be stuck in an infinite loop
-						break;
-					}
-				}
+                // then assign this chunk into the cache
+                if let Some(cached_chunk) =
+                    self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
+                {
+                    // there might have been another cached chunk
+                    self.chunks_to_delete
+                        .push((old_chunk.position, cached_chunk));
+                }
 
-				// then assign this chunk into the cache
-				if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk) {
-					// there might have been another cached chunk
-					self.chunks_to_delete.push((old_chunk.position, cached_chunk));
-				}
-
-				// and make sure it's tracked
-				self.cache_queue.push_back(old_chunk.position);
+                // and make sure it's tracked
+                self.cache_queue.push_back(old_chunk.position);
             }
 
             // and properly set the chunk pointer of the node of the chunk we just moved, if any
@@ -581,17 +662,15 @@ where
         self.chunks_to_deactivate.clear();
     }
 
-	/// Completes the update by removing all chunks that can't be stored anymore permanently
-	#[inline]
-	pub fn complete_update(&mut self) {
-
-		// just clear the chunks to be deleted
-		self.chunks_to_delete.clear();
-
-	}
+    /// Completes the update by removing all chunks that can't be stored anymore permanently
+    #[inline]
+    pub fn complete_update(&mut self) {
+        // just clear the chunks to be deleted
+        self.chunks_to_delete.clear();
+    }
 
     /// clears the tree, removing all chunks and internal lists and cache
-	#[inline]
+    #[inline]
     pub fn clear(&mut self) {
         self.chunks.clear();
         self.nodes.clear();
@@ -600,16 +679,16 @@ where
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
-		self.chunks_to_delete.clear();
+        self.chunks_to_delete.clear();
         self.processing_queue.clear();
-		self.cache_queue.clear();
-		self.chunk_cache.clear();
+        self.cache_queue.clear();
+        self.chunk_cache.clear();
     }
 
     /// Shrinks all internal buffers to fit, reducing memory usage.
     /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory.
-	#[inline]
-	pub fn shrink(&mut self) {
+    #[inline]
+    pub fn shrink(&mut self) {
         self.chunks.shrink_to_fit();
         self.nodes.shrink_to_fit();
         self.free_list.shrink_to_fit();
@@ -620,16 +699,16 @@ where
         self.processing_queue.shrink_to_fit();
     }
 
-	/// resizes the current cache size
-	/// actual resizing happens on the next update
-	#[inline]
-	pub fn set_cache_size(&mut self, cache_size: usize) {
-		self.cache_size = cache_size;
-	}
+    /// resizes the current cache size
+    /// actual resizing happens on the next update
+    #[inline]
+    pub fn set_cache_size(&mut self, cache_size: usize) {
+        self.cache_size = cache_size;
+    }
 
     // gets a chunk from the cache, otehrwise generates one from the given function
-	#[inline]
-	fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
+    #[inline]
+    fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
         if let Some(chunk) = self.chunk_cache.remove(&position) {
             chunk
         } else {
@@ -673,6 +752,9 @@ mod tests {
             // and actually update
             tree.do_update();
         }
+
+		// and find the resulting chunk
+		println!("{:?}", tree.get_chunk_from_position(QuadVec::new(16, 8, 16)).is_some());
 
         // and make the tree have no items
         while tree.prepare_update(&[], 8, |_| TestChunk {}) {

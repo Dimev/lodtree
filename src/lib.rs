@@ -82,12 +82,12 @@
 //! # }
 //! # let mut tree = Tree::<Chunk, QuadVec>::new();
 //! // and make all chunks visible or not
-//! for i in 0..tree.get_num_chunks_to_activate() {
-//! 	tree.get_chunk_to_activate_mut(i).set_visible(true);
+//! for chunk in tree.iter_chunks_to_activate_mut() {
+//! 	chunk.set_visible(true);
 //! }
 //!
-//! for i in 0..tree.get_num_chunks_to_deactivate() {
-//! 	tree.get_chunk_to_deactivate_mut(i).set_visible(false);
+//! for chunk in tree.iter_chunks_to_deactivate_mut() {
+//! 	chunk.set_visible(false);
 //! }
 //! ```
 //! We'll probably also want to do some cleanup with chunks that are removed.
@@ -100,8 +100,8 @@
 //! #     fn cleanup(&mut self) {}
 //! # }
 //! # let mut tree = Tree::<Chunk, QuadVec>::new();
-//! for i in 0..tree.get_num_chunks_to_remove() {
-//! 	tree.get_chunk_to_remove_mut(i).cleanup();
+//! for chunk in tree.iter_chunks_to_remove_mut() {
+//! 	chunk.cleanup();
 //! }
 //! ```
 //! And finally, actually update the tree with the new chunks.
@@ -124,10 +124,10 @@
 //! #     fn true_cleanup(&mut self) {}
 //! # }
 //! # let mut tree = Tree::<Chunk, QuadVec>::new();
-//! for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
+//! for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() { // there's also an iterator for just chunks here
 //! 	chunk.true_cleanup();
 //! }
-//! 
+//!
 //! // and finally, complete the entire update
 //! tree.complete_update();
 //! ```
@@ -141,21 +141,21 @@
 //! let mut tree = Tree::<Chunk, QuadVec>::new(cache_size);
 //! ```
 //! When a chunk is removed from the tree, it will be put in the cache.
-//! When a new chunk is then added to the tree, it's fetched from the cache when possible. 
+//! When a new chunk is then added to the tree, it's fetched from the cache when possible.
 //! This should help avoid needing to regenerate all new chunks, as they are fetched from the internal cache.
 //!
 //! Caching is most effective with a larger cache size as well as the target position moving around in roughly the same area.
-//! Of course, it comes at a memory tradeoff, as it will keep all chunks in the cache stored in memory 
+//! Of course, it comes at a memory tradeoff, as it will keep all chunks in the cache stored in memory
 //!
 //! # Chunk groups
 //! There's several groups of chunks that can be accessed inside the tree.
-//! - `chunks`: All chunks currently stored inside the tree 
+//! - `chunks`: All chunks currently stored inside the tree
 //! - `chunks_to_add`: Chunks that will be added after the next `tree.do_update();`
 //! - `chunks_to_deactivate`: Chunks that have subdivided and thus need to be invisible.
 //! - `chunks_to_activate`: Chunks that were previously subdivided, but are now going to be leaf nodes. This means they should be visible again
 //! - `chunks_to_remove`: Chunks that will be removed from the tree after the next `tree.do_update()`. Note that these can be put in the chunk cache and appear in `chunks_to_add` at a later point
 //! - `chunks_to_delete`: Chunks that are permanently removed from the tree, as they were removed from the tree itself, and will now also be removed from the chunk cache
-//! 
+//!
 //! Cached chunks are also stored seperate from the tree, inside a HashMap. These can't be accessed.
 
 pub mod coords;

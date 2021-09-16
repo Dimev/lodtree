@@ -19,6 +19,8 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     ///
     /// The depth determines the max lod level allowed, detail determines the amount of chunks around the target.
     ///
+    /// if the detail is 0, this may only return true if self is inside the node.
+    ///
     /// The implementation used in the QuadVec implementation is as follows:
     /// ```rust
     /// # struct Chunk { x: u64, y: u64, depth: u8 }
@@ -59,31 +61,31 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     fn can_subdivide(self, node: Self, detail: u64) -> bool;
 
     /// check if this chunk is inside of a bounding box
-	/// where min is the lowest corner of the box, and max is the highest corner
-	/// The implementation for QuadVec is as follows:
-	/// ```rust
+    /// where min is the lowest corner of the box, and max is the highest corner
+    /// The implementation for QuadVec is as follows:
+    /// ```rust
     /// # struct Chunk { x: u64, y: u64, depth: u8 }
     /// # impl Chunk {
-	/// // get the lowest lod level
-	/// let level = self.depth.max(min.depth.max(max.depth));
-	/// 
-	/// // bring all coords to the lowest level
-	/// let self_difference = level - self.depth;
-	/// let min_difference = level - min.depth;
-	/// let max_difference = level - max.depth;
-	/// 
-	/// // get the coords to that level
-	/// let self_x = self.x << self_difference;
-	/// let self_y = self.y << self_difference;
-	/// 
-	/// let min_x = self.x << min_difference;
-	/// let min_y = self.y << min_difference;
-	/// 
-	/// let max_x = self.x << max_difference;
-	/// let max_y = self.y << max_difference;
-	/// 
-	/// // then check if we are inside the AABB
-	/// self_x >= min_x && self_x < max_x && self_y >= min_y && self_y < max_y
-	/// ```
-    fn is_inside_bounds(self, min: Self, max: Self) -> bool;
+    /// // get the lowest lod level
+    /// let level = self.depth.max(min.depth.max(max.depth));
+    ///
+    /// // bring all coords to the lowest level
+    /// let self_difference = level - self.depth;
+    /// let min_difference = level - min.depth;
+    /// let max_difference = level - max.depth;
+    ///
+    /// // get the coords to that level
+    /// let self_x = self.x << self_difference;
+    /// let self_y = self.y << self_difference;
+    ///
+    /// let min_x = self.x << min_difference;
+    /// let min_y = self.y << min_difference;
+    ///
+    /// let max_x = self.x << max_difference;
+    /// let max_y = self.y << max_difference;
+    ///
+    /// // then check if we are inside the AABB
+    /// self_x >= min_x && self_x < max_x && self_y >= min_y && self_y < max_y
+    /// ```
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool;
 }

@@ -28,8 +28,8 @@ impl Chunk {
     // and pretend this makes chunks visible/invisible
     fn set_visible(&mut self, _visibility: bool) {}
 
-	// and pretend this drops anything for when a chunk is permanently deleted
-	fn cleanup(&mut self) {}
+    // and pretend this drops anything for when a chunk is permanently deleted
+    fn cleanup(&mut self) {}
 }
 
 fn main() {
@@ -62,12 +62,12 @@ fn main() {
                 });
 
             // and make all chunks visible or not
-            for i in 0..tree.get_num_chunks_to_activate() {
-                tree.get_chunk_to_activate_mut(i).set_visible(true);
+            for chunk in tree.iter_chunks_to_activate_mut() {
+                chunk.set_visible(true);
             }
 
-            for i in 0..tree.get_num_chunks_to_deactivate() {
-                tree.get_chunk_to_deactivate_mut(i).set_visible(false);
+            for chunk in tree.iter_chunks_to_deactivate_mut() {
+                chunk.set_visible(false);
             }
 
             let start_time = std::time::Instant::now();
@@ -75,13 +75,13 @@ fn main() {
             // and don't forget to actually run the update
             tree.do_update();
 
-			// now we probably want to truly clean up the chunks that are going to be deleted from memory
-			for (_, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
-				chunk.cleanup();
-			}
+            // now we probably want to truly clean up the chunks that are going to be deleted from memory
+            for chunk in tree.iter_chunks_to_delete_mut() {
+                chunk.cleanup();
+            }
 
-			// and actually clean them up
-			tree.complete_update();
+            // and actually clean them up
+            tree.complete_update();
 
             let duration = start_time.elapsed().as_micros();
 

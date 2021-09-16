@@ -8,7 +8,7 @@ use lodtree::*;
 struct Chunk {
     position: QuadVec,
     visible: bool,
-	cache_state: i32, // 0 is new, 1 is merged, 2 is cached, 3 is both
+    cache_state: i32, // 0 is new, 1 is merged, 2 is cached, 3 is both
 }
 
 fn main() {
@@ -113,29 +113,29 @@ fn main() {
             |position| Chunk {
                 position,
                 visible: true,
-				cache_state: 0,
+                cache_state: 0,
             },
         ) {
             // position should already have been set, so we can just change the visibility
-            for i in 0..tree.get_num_chunks_to_activate() {
-                tree.get_chunk_to_activate_mut(i).visible = true;
-                tree.get_chunk_to_activate_mut(i).cache_state |= 1;
+            for chunk in tree.iter_chunks_to_activate_mut() {
+                chunk.visible = true;
+                chunk.cache_state |= 1;
             }
 
-            for i in 0..tree.get_num_chunks_to_deactivate() {
-                tree.get_chunk_to_deactivate_mut(i).visible = false;
+            for chunk in tree.iter_chunks_to_deactivate_mut() {
+                chunk.visible = false;
             }
 
-			// and make chunks that are cached visible
-			for i in 0..tree.get_num_chunks_to_remove() {
-				tree.get_chunk_to_remove_mut(i).cache_state = 2;
-			}
+            // and make chunks that are cached visible
+            for chunk in tree.iter_chunks_to_remove_mut() {
+                chunk.cache_state = 2;
+            }
 
             // do the update
             tree.do_update();
 
-			// and clean
-			tree.complete_update();
+            // and clean
+            tree.complete_update();
         }
 
         // and, Redraw!
@@ -150,7 +150,7 @@ fn main() {
                 let uniforms = uniform! {
                     offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
                     scale: chunk.position.get_size() as f32,
-					state: chunk.cache_state,
+                    state: chunk.cache_state,
                 };
 
                 // draw it with glium

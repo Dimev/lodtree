@@ -82,12 +82,17 @@ impl LodVec for QuadVec {
 
     #[inline]
     fn get_child(self, index: usize) -> Self {
-        match index {
-            0 => QuadVec::new(self.x << 1, self.y << 1, self.depth + 1),
-            1 => QuadVec::new(self.x << 1, (self.y << 1) + 1, self.depth + 1),
-            2 => QuadVec::new((self.x << 1) + 1, self.y << 1, self.depth + 1),
-            _ => QuadVec::new((self.x << 1) + 1, (self.y << 1) + 1, self.depth + 1),
-        }
+
+		// the positions, doubled in scale
+		let x = self.x << 1;
+		let y = self.y << 1;
+
+		// and how much to increment them with
+		let increment_x = index as u64 & 1;
+		let increment_y = (index as u64 & 2) >> 1; 
+        
+		// and return
+		Self {x: x + increment_x, y: y + increment_y, depth: self.depth + 1}
     }
 
     #[inline]
@@ -123,7 +128,7 @@ impl LodVec for QuadVec {
         local.0 >= min.0 && local.0 < max.0 && local.1 >= min.1 && local.1 < max.1
     }
 
-    fn is_inside_bounds(self, min: Self, max: Self) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
         // get the lowest lod level
         let level = self.depth.max(min.depth.max(max.depth));
 
@@ -143,7 +148,11 @@ impl LodVec for QuadVec {
         let max_y = self.y << max_difference;
 
         // then check if we are inside the AABB
-        self_x >= min_x && self_x < max_x && self_y >= min_y && self_y < max_y
+        self.depth as u64 <= max_depth
+            && self_x >= min_x
+            && self_x < max_x
+            && self_y >= min_y
+            && self_y < max_y
     }
 }
 
@@ -238,36 +247,18 @@ impl LodVec for OctVec {
 
     #[inline]
     fn get_child(self, index: usize) -> Self {
-        match index {
-            0 => Self::new(self.x << 1, self.y << 1, self.z << 1, self.depth + 1),
-            1 => Self::new(self.x << 1, self.y << 1, (self.z << 1) + 1, self.depth + 1),
-            2 => Self::new(self.x << 1, (self.y << 1) + 1, self.z << 1, self.depth + 1),
-            3 => Self::new(
-                self.x << 1,
-                (self.y << 1) + 1,
-                (self.z << 1) + 1,
-                self.depth + 1,
-            ),
-            4 => Self::new((self.x << 1) + 1, self.y << 1, self.z << 1, self.depth + 1),
-            5 => Self::new(
-                (self.x << 1) + 1,
-                self.y << 1,
-                (self.z << 1) + 1,
-                self.depth + 1,
-            ),
-            6 => Self::new(
-                (self.x << 1) + 1,
-                (self.y << 1) + 1,
-                self.z << 1,
-                self.depth + 1,
-            ),
-            _ => Self::new(
-                (self.x << 1) + 1,
-                (self.y << 1) + 1,
-                (self.z << 1) + 1,
-                self.depth + 1,
-            ),
-        }
+        // the positions, doubled in scale
+		let x = self.x << 1;
+		let y = self.y << 1;
+		let z = self.z << 1;
+
+		// and how much to increment them with
+		let increment_x = index as u64 & 1;
+		let increment_y = (index as u64 & 2) >> 1; 
+		let increment_z = (index as u64 & 4) >> 2; 
+        
+		// and return
+		Self {x: x + increment_x, y: y + increment_y, z: z + increment_z, depth: self.depth + 1}
     }
 
     #[inline]
@@ -312,7 +303,7 @@ impl LodVec for OctVec {
             && local.2 < max.2
     }
 
-    fn is_inside_bounds(self, min: Self, max: Self) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
         // get the lowest lod level
         let level = self.depth.max(min.depth.max(max.depth));
 
@@ -335,7 +326,8 @@ impl LodVec for OctVec {
         let max_z = self.z << max_difference;
 
         // then check if we are inside the AABB
-        self_x >= min_x
+        self.depth as u64 <= max_depth
+            && self_x >= min_x
             && self_x < max_x
             && self_y >= min_y
             && self_y < max_y

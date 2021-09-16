@@ -34,15 +34,15 @@ macro_rules! impl_iterator {
             }
         }
 
-		// exact size as well
-		impl<'a, C: Sized, L: LodVec> ExactSizeIterator for $name<'a, C, L> {
-			fn len(&self) -> usize {
-				self.tree.$len()
-			}
-		}
+        // exact size as well
+        impl<'a, C: Sized, L: LodVec> ExactSizeIterator for $name<'a, C, L> {
+            fn len(&self) -> usize {
+                self.tree.$len()
+            }
+        }
 
-		// fused, because it will always return none when done
-		impl<'a, C: Sized, L: LodVec> std::iter::FusedIterator for $name<'a, C, L> {}
+        // fused, because it will always return none when done
+        impl<'a, C: Sized, L: LodVec> std::iter::FusedIterator for $name<'a, C, L> {}
     };
 }
 
@@ -58,19 +58,17 @@ macro_rules! impl_iterator_mut {
 
         // and implement iterator for it
         impl<'a, C: Sized, L: LodVec> Iterator for $name<'a, C, L> {
-		// 3. ^^^ but, the lifetime must be valid for the lifetime `'a` as defined on the impl
             type Item = $type;
 
             fn next(&mut self) -> Option<Self::Item> {
-            // 1. ^ first, the lifetime cannot outlive the anonymous lifetime defined on the method body
-			// 4. ...so that the types are compatible
-				// if the item is too big, stop
+                // if the item is too big, stop
                 if self.index >= self.tree.$len() {
                     None
                 } else {
                     // otherwise, get the item
-                    let item = self.tree.$get_mut(self.index);
-					// 2. ^^ ...so that reference does not outlive borrowed content
+                    // this is unsafe due to needing pointers
+                    // this is the only way I know of to convince the borrowchecker this is a unique item
+                    let item = unsafe { self.tree.$get_mut(self.index).as_mut()? };
 
                     // increment the index
                     self.index += 1;
@@ -80,26 +78,37 @@ macro_rules! impl_iterator_mut {
             }
         }
 
-		// exact size as well
-		impl<'a, C: Sized, L: LodVec> ExactSizeIterator for $name<'a, C, L> {
-			fn len(&self) -> usize {
-				self.tree.$len()
-			}
-		}
+        // exact size as well
+        impl<'a, C: Sized, L: LodVec> ExactSizeIterator for $name<'a, C, L> {
+            fn len(&self) -> usize {
+                self.tree.$len()
+            }
+        }
 
-		// fused, because it will always return none when done
-		impl<'a, C: Sized, L: LodVec> std::iter::FusedIterator for $name<'a, C, L> {}
+        // fused, because it will always return none when done
+        impl<'a, C: Sized, L: LodVec> std::iter::FusedIterator for $name<'a, C, L> {}
     };
 }
 
 impl_iterator!(ChunkIter, &'a C, get_num_chunks, get_chunk);
 impl_iterator!(PositionIter, L, get_num_chunks, get_chunk_position);
-//impl_iterator_mut!(MutChunkIter, &'a mut C, get_num_chunks, get_chunk_mut);
+impl_iterator_mut!(
+    MutChunkIter,
+    &'a mut C,
+    get_num_chunks,
+    get_chunk_pointer_mut
+);
 impl_iterator!(
     ChunkToActivateIter,
     &'a C,
     get_num_chunks_to_activate,
     get_chunk_to_activate
+);
+impl_iterator_mut!(
+    MutChunkToActivateIter,
+    &'a mut C,
+    get_num_chunks_to_activate,
+    get_chunk_to_activate_pointer_mut
 );
 impl_iterator!(
     PositionToActivateIter,
@@ -113,6 +122,12 @@ impl_iterator!(
     get_num_chunks_to_deactivate,
     get_chunk_to_deactivate
 );
+impl_iterator_mut!(
+    MutChunkToDeactivateIter,
+    &'a mut C,
+    get_num_chunks_to_deactivate,
+    get_chunk_to_deactivate_pointer_mut
+);
 impl_iterator!(
     PositionToDeactivateIter,
     L,
@@ -124,6 +139,12 @@ impl_iterator!(
     &'a C,
     get_num_chunks_to_add,
     get_chunk_to_add
+);
+impl_iterator_mut!(
+    MutChunkToAddIter,
+    &'a mut C,
+    get_num_chunks_to_add,
+    get_chunk_to_add_pointer_mut
 );
 impl_iterator!(
     PositionToAddIter,
@@ -137,6 +158,12 @@ impl_iterator!(
     get_num_chunks_to_remove,
     get_chunk_to_remove
 );
+impl_iterator_mut!(
+    MutChunkToRemoveIter,
+    &'a mut C,
+    get_num_chunks_to_remove,
+    get_chunk_to_remove_pointer_mut
+);
 impl_iterator!(
     PositionToRemoveIter,
     L,
@@ -149,6 +176,12 @@ impl_iterator!(
     get_num_chunks_to_delete,
     get_chunk_to_delete
 );
+impl_iterator_mut!(
+    MutChunkToDeleteIter,
+    &'a mut C,
+    get_num_chunks_to_delete,
+    get_chunk_to_delete_pointer_mut
+);
 impl_iterator!(
     PositionToDeleteIter,
     L,
@@ -158,28 +191,40 @@ impl_iterator!(
 // TODO: iterator for all
 
 // iterator for all chunks that are inside given bounds
-pub struct EditedChunksIter<L: LodVec> {
-	// internal stack for which chunks are next
-	stack: Vec<L>
+pub struct ChunksInBoundIter<L: LodVec> {
+    // internal stack for which chunks are next
+    stack: Vec<L>,
+
+    // and maximum depth to go to
+    max_depth: u64,
+
+    // and the min of the bound
+    bound_min: L,
+
+    // and max of the bound
+    bound_max: L,
 }
 
-impl<L: LodVec> Iterator for EditedChunksIter<L> {
-	type Item = L;
+impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
+    type Item = L;
 
-	fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(current) = self.stack.pop() {
+            // go over all child nodes
+            for i in 0..L::num_children() {
+                let position = current.get_child(i);
 
-		if let Some(current) = self.stack.pop() {
-
-			// go over all child nodes
-			// if they are in bounds, and the correct depth, add them to the stack
-
-			// and return this item from the stack
-			Some(current)
-		} else {
-			None
-		}
-		
-	}
+                // if they are in bounds, and the correct depth, add them to the stack
+                if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                    self.stack.push(position);
+                }
+            }
+            // and return this item from the stack
+            Some(current)
+        } else {
+            None
+        }
+    }
 }
 
 impl<'a, C, L> Tree<C, L>
@@ -198,9 +243,16 @@ where
     }
 
     // iterate over all chunks, mutable
+    #[inline]
+    pub fn iter_chunks_mut(&mut self) -> MutChunkIter<C, L> {
+        MutChunkIter {
+            tree: self,
+            index: 0,
+        }
+    }
 
-	/// iterate over the position of all chunks
-	#[inline]
+    /// iterate over the position of all chunks
+    #[inline]
     pub fn iter_position_of_chunks(&self) -> PositionIter<C, L> {
         PositionIter {
             tree: self,
@@ -217,7 +269,16 @@ where
         }
     }
 
-	/// iterate over all positions of the chunks to activate
+    // iterate over all chunks to activate, mutable
+    #[inline]
+    pub fn iter_chunks_to_activate_mut(&mut self) -> MutChunkToActivateIter<C, L> {
+        MutChunkToActivateIter {
+            tree: self,
+            index: 0,
+        }
+    }
+
+    /// iterate over all positions of the chunks to activate
     #[inline]
     pub fn iter_position_of_chunks_to_activate(&self) -> PositionToActivateIter<C, L> {
         PositionToActivateIter {
@@ -225,8 +286,6 @@ where
             index: 0,
         }
     }
-
-    // iterate over all chunks to activate, mut
 
     /// iterate over all chunks to deactivate
     #[inline]
@@ -237,7 +296,16 @@ where
         }
     }
 
-	/// iterate over all positions of the chunks to deactivate
+    // iterate over all chunks to deactivate, mut
+    #[inline]
+    pub fn iter_chunks_to_deactivate_mut(&mut self) -> MutChunkToDeactivateIter<C, L> {
+        MutChunkToDeactivateIter {
+            tree: self,
+            index: 0,
+        }
+    }
+
+    /// iterate over all positions of the chunks to deactivate
     #[inline]
     pub fn iter_position_of_chunks_to_deactivate(&self) -> PositionToDeactivateIter<C, L> {
         PositionToDeactivateIter {
@@ -245,8 +313,6 @@ where
             index: 0,
         }
     }
-
-    // iterate over all chunks to deactivate, mut
 
     /// iterate over all chunks to remove
     #[inline]
@@ -257,7 +323,16 @@ where
         }
     }
 
-	/// iterate over all positions of the chunks to remove
+    // iterate over all chunks to remove, mut
+    #[inline]
+    pub fn iter_chunks_to_remove_mut(&mut self) -> MutChunkToRemoveIter<C, L> {
+        MutChunkToRemoveIter {
+            tree: self,
+            index: 0,
+        }
+    }
+
+    /// iterate over all positions of the chunks to remove
     #[inline]
     pub fn iter_position_of_chunks_to_remove(&self) -> PositionToRemoveIter<C, L> {
         PositionToRemoveIter {
@@ -266,12 +341,19 @@ where
         }
     }
 
-    // iterate over all chunks to remove, mut
-
     /// iterate over all chunks to add
     #[inline]
     pub fn iter_chunks_to_add(&self) -> ChunkToAddIter<C, L> {
         ChunkToAddIter {
+            tree: self,
+            index: 0,
+        }
+    }
+
+    // iterate over all chunks to add, mut
+    #[inline]
+    pub fn iter_chunks_to_add_mut(&mut self) -> MutChunkToAddIter<C, L> {
+        MutChunkToAddIter {
             tree: self,
             index: 0,
         }
@@ -286,7 +368,7 @@ where
         }
     }
 
-	/// iterate over all chunks to delete
+    /// iterate over all chunks to delete
     #[inline]
     pub fn iter_chunks_to_delete(&self) -> ChunkToDeleteIter<C, L> {
         ChunkToDeleteIter {
@@ -295,7 +377,16 @@ where
         }
     }
 
-	/// iterate over all positions of the chunks to delete
+    // iterate over all chunks to delete, mut
+    #[inline]
+    pub fn iter_chunks_to_delete_mut(&mut self) -> MutChunkToDeleteIter<C, L> {
+        MutChunkToDeleteIter {
+            tree: self,
+            index: 0,
+        }
+    }
+
+    /// iterate over all positions of the chunks to delete
     #[inline]
     pub fn iter_position_of_chunks_to_delete(&self) -> PositionToDeleteIter<C, L> {
         PositionToDeleteIter {
@@ -308,7 +399,20 @@ where
 
     // iterate over all chunks to add, mut
 
-    // iterate over all chunks that would be affected by an edit
+    // iterate over all chunks that would be affected by an edit inside a certain bound
+    #[inline]
+    pub fn iter_all_chunks_in_bounds(
+        bound_min: L,
+        bound_max: L,
+        max_depth: u64,
+    ) -> ChunksInBoundIter<L> {
+        ChunksInBoundIter {
+            stack: vec![L::root()],
+            max_depth,
+            bound_min,
+            bound_max,
+        }
+    }
 
     // iterate over all chunks affected by an edit
 
