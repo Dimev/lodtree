@@ -98,8 +98,9 @@ tree.complete_update();
 ```
 
 ### Roadmap
- - Support getting "edited" chunks, via also passing along a region in which chunks would be edited.
- - iterators for all chunk data accessing methods.
+ - Support getting "edited" chunks, via also passing along a region in which chunks would be edited. HAS BUGS
+ - caching DONE
+ - iterators for all chunk data accessing methods. DONE, just needs docs
 
 ## License
 
