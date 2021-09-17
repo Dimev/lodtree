@@ -128,11 +128,10 @@ where
 
         // then loop
         loop {
-
-			// if the current node does not have children, stop
-			if current.children.is_none() {
-				return None;
-			}
+            // if the current node does not have children, stop
+            if current.children.is_none() {
+                return None;
+            }
 
             // if the current node is the one we are looking for, return
             if current_position == position {
@@ -144,15 +143,15 @@ where
                 .map(|i| (i, current_position.get_child(i)))
                 .find(|(_, x)| x.can_subdivide(position, 0))
             {
-				// we found the position to go to
-				current_position = found_position;
+                // we found the position to go to
+                current_position = found_position;
 
-				// and the node is at the index of the child nodes + index
-				current = self.nodes[current.children.unwrap().get() + index];
-			} else {
-				// if no child got found that matched the item, return none
-				return None;
-			}
+                // and the node is at the index of the child nodes + index
+                current = self.nodes[current.children.unwrap().get() + index];
+            } else {
+                // if no child got found that matched the item, return none
+                return None;
+            }
         }
     }
 
@@ -165,7 +164,7 @@ where
     /// gets a mutable pointer to a chunk
     /// This casts get_chunk_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_mut(index)
     }
 
@@ -196,7 +195,7 @@ where
     /// gets a mutable pointer to a chunk that is pending activation
     /// This casts get_chunk_to_activate_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_to_activate_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_to_activate_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_to_activate_mut(index)
     }
 
@@ -227,7 +226,7 @@ where
     /// gets a mutable pointer to a chunk that is pending deactivation
     /// This casts get_chunk_to_deactivate_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_to_deactivate_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_to_deactivate_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_to_deactivate_mut(index)
     }
 
@@ -258,7 +257,7 @@ where
     /// gets a mutable pointer to a chunk that is pending removal
     /// This casts get_chunk_to_remove_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_to_remove_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_to_remove_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_to_remove_mut(index)
     }
 
@@ -289,7 +288,7 @@ where
     /// gets a mutable pointer to a chunk that is pending to be added
     /// This casts get_chunk_to_add_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_to_add_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_to_add_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_to_add_mut(index)
     }
 
@@ -332,7 +331,7 @@ where
     /// gets a mutable pointer to a chunk that is pending deletion
     /// This casts get_chunk_to_delete_mut to a pointer underneath the hood
     #[inline]
-    pub unsafe fn get_chunk_to_delete_pointer_mut(&mut self, index: usize) -> *mut C {
+    pub fn get_chunk_to_delete_pointer_mut(&mut self, index: usize) -> *mut C {
         self.get_chunk_to_delete_mut(index)
     }
 
@@ -753,8 +752,12 @@ mod tests {
             tree.do_update();
         }
 
-		// and find the resulting chunk
-		println!("{:?}", tree.get_chunk_from_position(QuadVec::new(16, 8, 16)).is_some());
+        // and find the resulting chunk
+        println!(
+            "{:?}",
+            tree.get_chunk_from_position(QuadVec::new(16, 8, 16))
+                .is_some()
+        );
 
         // and make the tree have no items
         while tree.prepare_update(&[], 8, |_| TestChunk {}) {

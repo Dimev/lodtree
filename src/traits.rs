@@ -86,7 +86,7 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     ///
     /// // then check if we are inside the AABB
     /// self_x >= min_x && self_x < max_x && self_y >= min_y && self_y < max_y
-	/// # }
+    /// # }
     /// ```
     fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool;
 }

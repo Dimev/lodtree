@@ -82,17 +82,20 @@ impl LodVec for QuadVec {
 
     #[inline]
     fn get_child(self, index: usize) -> Self {
+        // the positions, doubled in scale
+        let x = self.x << 1;
+        let y = self.y << 1;
 
-		// the positions, doubled in scale
-		let x = self.x << 1;
-		let y = self.y << 1;
+        // and how much to increment them with
+        let increment_x = index as u64 & 1;
+        let increment_y = (index as u64 & 2) >> 1;
 
-		// and how much to increment them with
-		let increment_x = index as u64 & 1;
-		let increment_y = (index as u64 & 2) >> 1; 
-        
-		// and return
-		Self {x: x + increment_x, y: y + increment_y, depth: self.depth + 1}
+        // and return
+        Self {
+            x: x + increment_x,
+            y: y + increment_y,
+            depth: self.depth + 1,
+        }
     }
 
     #[inline]
@@ -248,17 +251,22 @@ impl LodVec for OctVec {
     #[inline]
     fn get_child(self, index: usize) -> Self {
         // the positions, doubled in scale
-		let x = self.x << 1;
-		let y = self.y << 1;
-		let z = self.z << 1;
+        let x = self.x << 1;
+        let y = self.y << 1;
+        let z = self.z << 1;
 
-		// and how much to increment them with
-		let increment_x = index as u64 & 1;
-		let increment_y = (index as u64 & 2) >> 1; 
-		let increment_z = (index as u64 & 4) >> 2; 
-        
-		// and return
-		Self {x: x + increment_x, y: y + increment_y, z: z + increment_z, depth: self.depth + 1}
+        // and how much to increment them with
+        let increment_x = index as u64 & 1;
+        let increment_y = (index as u64 & 2) >> 1;
+        let increment_z = (index as u64 & 4) >> 2;
+
+        // and return
+        Self {
+            x: x + increment_x,
+            y: y + increment_y,
+            z: z + increment_z,
+            depth: self.depth + 1,
+        }
     }
 
     #[inline]

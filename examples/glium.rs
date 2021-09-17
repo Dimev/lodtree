@@ -6,7 +6,6 @@ use lodtree::*;
 
 // the chunk struct for the tree
 struct Chunk {
-    position: QuadVec,
     visible: bool,
     cache_state: i32, // 0 is new, 1 is merged, 2 is cached, 3 is both
 }
@@ -110,8 +109,7 @@ fn main() {
                 6,
             )],
             2,
-            |position| Chunk {
-                position,
+            |_position| Chunk {
                 visible: true,
                 cache_state: 0,
             },
@@ -143,13 +141,13 @@ fn main() {
         target.clear_color(0.1, 0.1, 0.1, 0.1);
 
         // go over all chunks, iterator version
-        for chunk in tree.iter_chunks() {
+        for (chunk, position) in tree.iter_chunks_and_positions() {
             if chunk.visible {
                 // draw it if it's visible
                 // here we get the chunk position and size
                 let uniforms = uniform! {
-                    offset: [chunk.position.get_float_coords().0 as f32, chunk.position.get_float_coords().1 as f32],
-                    scale: chunk.position.get_size() as f32,
+                    offset: [position.get_float_coords().0 as f32, position.get_float_coords().1 as f32],
+                    scale: position.get_size() as f32,
                     state: chunk.cache_state,
                 };
 
