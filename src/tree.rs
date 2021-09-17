@@ -118,7 +118,7 @@ where
     }
 
     /// get a chunk by position
-    #[inline]
+	/// DOESN'T WORK YET, TODO: DON'T USE CAN_SUBDIVIDE
     pub fn get_chunk_from_position(&self, position: L) -> Option<&C> {
         // the current node
         let mut current = *self.nodes.get(0)?;
@@ -128,20 +128,21 @@ where
 
         // then loop
         loop {
-            // if the current node does not have children, stop
-            if current.children.is_none() {
-                return None;
-            }
-
+            
             // if the current node is the one we are looking for, return
             if current_position == position {
                 return Some(&self.chunks[current.chunk].chunk);
             }
 
+			// if the current node does not have children, stop
+            if current.children.is_none() {
+                return None;
+            }
+
             // if not, go over the node children
             if let Some((index, found_position)) = (0..L::num_children())
                 .map(|i| (i, current_position.get_child(i)))
-                .find(|(_, x)| x.can_subdivide(position, 0))
+                .find(|(_, x)| position.can_subdivide(*x, 0))
             {
                 // we found the position to go to
                 current_position = found_position;
@@ -755,7 +756,7 @@ mod tests {
         // and find the resulting chunk
         println!(
             "{:?}",
-            tree.get_chunk_from_position(QuadVec::new(16, 8, 16))
+            tree.get_chunk_from_position(QuadVec::new(2, 2, 2))
                 .is_some()
         );
 
