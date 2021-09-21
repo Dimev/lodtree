@@ -383,21 +383,20 @@ impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
 
 	#[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(current) = self.stack.pop() {
-            // go over all child nodes
-            for i in 0..L::num_children() {
-                let position = current.get_child(i);
+        let current = self.stack.pop()?;
 
-                // if they are in bounds, and the correct depth, add them to the stack
-                if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
-                    self.stack.push(position);
-                }
-            }
-            // and return this item from the stack
-            Some(current)
-        } else {
-            None
-        }
+		// go over all child nodes
+		for i in 0..L::num_children() {
+			let position = current.get_child(i);
+
+			// if they are in bounds, and the correct depth, add them to the stack
+			if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+				self.stack.push(position);
+			}
+		}
+		// and return this item from the stack
+		Some(current)
+        
     }
 }
 
@@ -437,7 +436,7 @@ mod tests {
 
 		struct C;
 
-		for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(QuadVec::new(1, 1, 4), QuadVec::new(7, 7, 4), 8) {
+		for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(QuadVec::new(1, 1, 4), QuadVec::new(8, 8, 4), 4) {
 
 			println!("{:?}", pos);
 

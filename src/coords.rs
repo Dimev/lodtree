@@ -133,22 +133,22 @@ impl LodVec for QuadVec {
 
     fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
         // get the lowest lod level
-        let level = self.depth.max(min.depth.max(max.depth));
+        let level = self.depth.min(min.depth.min(max.depth));
 
         // bring all coords to the lowest level
-        let self_difference = level - self.depth;
-        let min_difference = level - min.depth;
-        let max_difference = level - max.depth;
+        let self_difference = self.depth - level;
+        let min_difference = min.depth - level;
+        let max_difference = max.depth - level;
 
         // get the coords to that level
-        let self_x = self.x << self_difference;
-        let self_y = self.y << self_difference;
+        let self_x = self.x >> self_difference;
+        let self_y = self.y >> self_difference;
 
-        let min_x = min.x << min_difference;
-        let min_y = min.y << min_difference;
+        let min_x = min.x >> min_difference;
+        let min_y = min.y >> min_difference;
 
-        let max_x = max.x << max_difference;
-        let max_y = max.y << max_difference;
+        let max_x = max.x >> max_difference;
+        let max_y = max.y >> max_difference;
 
         // then check if we are inside the AABB
         self.depth as u64 <= max_depth
@@ -313,25 +313,25 @@ impl LodVec for OctVec {
 
     fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
         // get the lowest lod level
-        let level = self.depth.max(min.depth.max(max.depth));
+        let level = self.depth.min(min.depth.min(max.depth));
 
         // bring all coords to the lowest level
-        let self_difference = level - self.depth;
-        let min_difference = level - min.depth;
-        let max_difference = level - max.depth;
+        let self_difference = self.depth - level;
+        let min_difference = min.depth - level;
+        let max_difference = max.depth - level;
 
         // get the coords to that level
-        let self_x = self.x << self_difference;
-        let self_y = self.y << self_difference;
-        let self_z = self.z << self_difference;
+        let self_x = self.x >> self_difference;
+        let self_y = self.y >> self_difference;
+        let self_z = self.z >> self_difference;
 
-        let min_x = min.x << min_difference;
-        let min_y = min.y << min_difference;
-        let min_z = min.z << min_difference;
+        let min_x = min.x >> min_difference;
+        let min_y = min.y >> min_difference;
+        let min_z = min.z >> min_difference;
 
-        let max_x = max.x << max_difference;
-        let max_y = max.y << max_difference;
-        let max_z = max.z << max_difference;
+        let max_x = max.x >> max_difference;
+        let max_y = max.y >> max_difference;
+        let max_z = max.z >> max_difference;
 
         // then check if we are inside the AABB
         self.depth as u64 <= max_depth
