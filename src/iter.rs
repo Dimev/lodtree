@@ -400,6 +400,10 @@ impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
     }
 }
 
+// TODO: iterator that also goes over chunks in the tree
+// as in: chunks in tree and bounds, immutable and mutable
+// all chunks in the bounds, and ones in the tree, if any
+
 impl<'a, C, L> Tree<C, L>
 where
     C: Sized,

@@ -3,19 +3,28 @@
 # LodTree
 LodTree, a simple tree data structure for doing chunk-based level of detail.
 
-### Goals
-The aim of this crate is to provide a generic, easy to use tree data structure that can be used to make Lod Quadtrees, Octrees and more.
+## Goals
+The aim of this crate is to provide a generic, easy to use tree data structure that can be used to make Quadtrees, Octrees and more for chunked level of detail.
 
 Internally, the tree tries to keep as much memory allocated, to avoid the cost of heap allocation, and stores the actual chunks data seperate from the tree data.
  
-This does come at a cost, mainly, only the chunks that are going to be added and their locations can be retreived as a slice, although for most (procedural) terrain implementations
-making new chunks and editing them will be the highest cost to do, so that shouldn't be the biggest issue.
+This does come at a cost. Mainly, only the chunks that are going to be added and their locations can be retreived as a slice, although for most (procedural) terrain implementations.
+
+## Non-goals
+Be a general-usage tree data structure for storing items at specific locations.
+
+## Features
+ - Provides sets of chunks that need some action performed on them
+ - Tries to avoid memory (re)allocations and moves
+ - Stores chunks themselves in a contiguous array
+ - Uses an internal chunk cache to allow reusing chunks at a memory tradeoff
+ - Provides some extra iterators for finding chunks in certain bounds
 
 ### Examples:
- - rayon: shows how to use the tree with rayon to generate new chunks in parallel.
- - glium: shows how a basic drawing setup would work, with glium to do the drawing.
+ - [rayon](examples/rayon.rs): shows how to use the tree with rayon to generate new chunks in parallel.
+ - [glium](examples/glium.rs): shows how a basic drawing setup would work, with glium to do the drawing.
 
-### Usage:
+## Usage:
 Import the crate
 ```rust
 use lodtree::*;
@@ -97,13 +106,17 @@ for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() {
 tree.complete_update();
 ```
 
-### Roadmap
- - Support getting "edited" chunks, via also passing along a region in which chunks would be edited. HAS BUGS
+## Roadmap
+### 0.2.0:
+ - Support getting "edited" chunks, via also passing along a region in which chunks would be edited. PARTIALLY DONE, NEEDS DOCS
  - caching DONE
- - iterators for all chunk data accessing methods. DONE, just needs docs
+ - iterators for all chunk data accessing methods. DONE, NEEDS DOCS
+ - getting a chunk by position HAS BUGS
+### 0.3.0:
+ - progressive loading (double bounds check, one for when to subdivide and one for when to merge, as well as limit on the amount of things we can add at a time)
+ - no-std (although alloc will be required here)
 
 ## License
-
 Licensed under either of
 
  * Apache License, Version 2.0
@@ -114,7 +127,6 @@ Licensed under either of
 at your option.
 
 ## Contribution
-
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
