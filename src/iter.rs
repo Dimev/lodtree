@@ -17,15 +17,20 @@ macro_rules! impl_all_iterators {
 		$get:ident,
 		$get_mut:ident,
 		$get_pos:ident,
+		$(#[$doc:meta])*
 		$func_name:ident,
+		$(#[$doc_mut:meta])*
 		$func_name_mut:ident,
+		$(#[$doc_pos:meta])*
 		$func_name_pos:ident,
+		$(#[$doc_chunk_and_pos:meta])*
 		$func_name_chunk_and_pos:ident,
+		$(#[$doc_chunk_and_pos_mut:meta])*
 		$func_name_chunk_and_pos_mut:ident,
 	) => {
         // define the struct
-        /// Iterator for chunks, auto generated
-        pub struct $name<'a, C: Sized, L: LodVec> {
+        #[doc="Iterator for chunks, see {}"]
+		pub struct $name<'a, C: Sized, L: LodVec> {
             tree: &'a Tree<C, L>,
             index: usize,
         }
@@ -212,6 +217,7 @@ macro_rules! impl_all_iterators {
             Self: 'a,
         {
 			#[inline]
+			$(#[$doc])*
 			pub fn $func_name(&mut self) -> $name<C, L> {
 				$name {
 					tree: self,
@@ -220,6 +226,7 @@ macro_rules! impl_all_iterators {
 			}
 
 			#[inline]
+			$(#[$doc_mut])*
 			pub fn $func_name_mut(&mut self) -> $name_mut<C, L> {
 				$name_mut {
 					tree: self,
@@ -228,6 +235,7 @@ macro_rules! impl_all_iterators {
 			}
 
 			#[inline]
+			$(#[$doc_pos])*
 			pub fn $func_name_pos(&mut self) -> $name_pos<C, L> {
 				$name_pos {
 					tree: self,
@@ -236,6 +244,7 @@ macro_rules! impl_all_iterators {
 			}
 
 			#[inline]
+			$(#[$doc_chunk_and_pos])*
 			pub fn $func_name_chunk_and_pos(&mut self) -> $name_chunk_and_pos<C, L> {
 				$name_chunk_and_pos {
 					tree: self,
@@ -244,6 +253,7 @@ macro_rules! impl_all_iterators {
 			}
 
 			#[inline]
+			$(#[$doc_chunk_and_pos_mut])*
 			pub fn $func_name_chunk_and_pos_mut(&mut self) -> $name_chunk_and_pos_mut<C, L> {
 				$name_chunk_and_pos_mut {
 					tree: self,
@@ -265,10 +275,15 @@ impl_all_iterators!(
     get_chunk,
     get_chunk_pointer_mut,
     get_chunk_position,
+	/// returns an iterator over all chunks
     iter_chunks,
+	/// returns an iterator over all chunks, mutable
     iter_chunks_mut,
+	/// returns an iterator over all positions of all chunks
     iter_chunk_positions,
+	/// returns an iterator over all chunks and their positions 
     iter_chunks_and_positions,
+	/// returns an iterator over all chunks as mutable and their positions 
     iter_chunks_and_positions_mut,
 );
 
@@ -283,11 +298,16 @@ impl_all_iterators!(
     get_chunk_to_activate,
     get_chunk_to_activate_pointer_mut,
     get_position_of_chunk_to_activate,
+	/// returns an iterator over all chunks to activate
     iter_chunks_to_activate,
+	/// returns an iterator over all chunks to activate, mutable
     iter_chunks_to_activate_mut,
-    iter_chunk_to_activate_positions,
-    iter_chunks_and_positions_to_activate,
-    iter_chunks_and_positions_to_activate_mut,
+	/// returns an iterator over all positions of all chunks to activate
+    iter_chunks_to_activate_positions,
+	/// returns an iterator over all chunks to activate and their positions 
+    iter_chunks_to_activate_and_positions,
+	/// returns an iterator over all chunks to activate as mutable and their positions 
+    iter_chunks_to_activate_and_positions_mut,
 );
 
 // to deactivate
@@ -301,11 +321,16 @@ impl_all_iterators!(
     get_chunk_to_deactivate,
     get_chunk_to_deactivate_pointer_mut,
     get_position_of_chunk_to_deactivate,
+    /// returns an iterator over all chunks to deactivate
     iter_chunks_to_deactivate,
+	/// returns an iterator over all chunks to deactivate, mutable
     iter_chunks_to_deactivate_mut,
-    iter_chunk_to_deactivate_positions,
-    iter_chunks_and_positions_to_deactivate,
-    iter_chunks_and_positions_to_deactivate_mut,
+	/// returns an iterator over all positions of all chunks to deactivate
+    iter_chunks_to_deactivate_positions,
+	/// returns an iterator over all chunks to deactivate and their positions 
+    iter_chunks_to_deactivate_and_positions,
+	/// returns an iterator over all chunks to deactivate as mutable and their positions 
+    iter_chunks_to_deactivate_and_positions_mut,
 );
 
 // to add
@@ -319,11 +344,16 @@ impl_all_iterators!(
     get_chunk_to_add,
     get_chunk_to_add_pointer_mut,
     get_position_of_chunk_to_add,
+    /// returns an iterator over all chunks to add
     iter_chunks_to_add,
+	/// returns an iterator over all chunks to add, mutable
     iter_chunks_to_add_mut,
-    iter_chunk_to_add_positions,
-    iter_chunks_and_positions_to_add,
-    iter_chunks_and_positions_to_add_mut,
+	/// returns an iterator over all positions of all chunks to add
+    iter_chunks_to_add_positions,
+	/// returns an iterator over all chunks to add and their positions 
+    iter_chunks_to_add_and_positions,
+	/// returns an iterator over all chunks to add as mutable and their positions 
+    iter_chunks_to_add_and_positions_mut,
 );
 
 // to remove
@@ -337,11 +367,16 @@ impl_all_iterators!(
     get_chunk_to_remove,
     get_chunk_to_remove_pointer_mut,
     get_position_of_chunk_to_remove,
+    /// returns an iterator over all chunks to remove
     iter_chunks_to_remove,
+	/// returns an iterator over all chunks to remove, mutable
     iter_chunks_to_remove_mut,
-    iter_chunk_to_remove_positions,
-    iter_chunks_and_positions_to_remove,
-    iter_chunks_and_positions_to_remove_mut,
+	/// returns an iterator over all positions of all chunks to remove
+    iter_chunks_to_remove_positions,
+	/// returns an iterator over all chunks to remove and their positions 
+    iter_chunks_to_remove_and_positions,
+	/// returns an iterator over all chunks to remove as mutable and their positions 
+    iter_chunks_to_remove_and_positions_mut,
 );
 
 // to delete
@@ -355,11 +390,16 @@ impl_all_iterators!(
     get_chunk_to_delete,
     get_chunk_to_delete_pointer_mut,
     get_position_of_chunk_to_delete,
+    /// returns an iterator over all chunks to delete
     iter_chunks_to_delete,
+	/// returns an iterator over all chunks to delete, mutable
     iter_chunks_to_delete_mut,
-    iter_chunk_to_delete_positions,
-    iter_chunks_and_positions_to_delete,
-    iter_chunks_and_positions_to_delete_mut,
+	/// returns an iterator over all positions of all chunks to delete
+    iter_chunks_to_delete_positions,
+	/// returns an iterator over all chunks to delete and their positions 
+    iter_chunks_to_delete_and_positions,
+	/// returns an iterator over all chunks to delete as mutable and their positions 
+    iter_chunks_to_delete_and_positions_mut,
 );
 
 // iterator for all chunks that are inside given bounds
