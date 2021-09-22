@@ -29,32 +29,32 @@ macro_rules! impl_all_iterators {
 		$func_name_chunk_and_pos_mut:ident,
 	) => {
         // define the struct
-        #[doc="Iterator for chunks, see {}"]
+        #[doc=concat!("Iterator for chunks, see ", stringify!($func_name), "() under Tree for documentation")]
 		pub struct $name<'a, C: Sized, L: LodVec> {
             tree: &'a Tree<C, L>,
             index: usize,
         }
 
-		/// Iterator for mutable chunks, auto generated
+		#[doc=concat!("Iterator for mutable chunks, see ", stringify!($func_name_mut), "() under Tree for documentation")]
         pub struct $name_mut<'a, C: Sized, L: LodVec> {
             tree: &'a mut Tree<C, L>,
             index: usize,
         }
 
-		/// Iterator for chunk positions, auto generated
+        #[doc=concat!("Iterator for chunk positions, see ", stringify!($func_name_pos), "() under Tree for documentation")]
         pub struct $name_pos<'a, C: Sized, L: LodVec> {
             tree: &'a Tree<C, L>,
             index: usize,
         }
 
-		/// Iterator for chunks ans their positions, auto generated
+        #[doc=concat!("Iterator for chunks and positions, see ", stringify!($func_name_chunk_and_pos), "() under Tree for documentation")]
         pub struct $name_chunk_and_pos<'a, C: Sized, L: LodVec> {
             tree: &'a Tree<C, L>,
             index: usize,
         }
 
-		/// Iterator for mutable chunks and their positions, auto generated
-        pub struct $name_chunk_and_pos_mut<'a, C: Sized, L: LodVec> {
+        #[doc=concat!("Iterator for mutable chunks and positions, see ", stringify!($func_name_chunk_and_pos_mut), "() under Tree for documentation")]
+		pub struct $name_chunk_and_pos_mut<'a, C: Sized, L: LodVec> {
             tree: &'a mut Tree<C, L>,
             index: usize,
         }
