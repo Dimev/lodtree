@@ -5,7 +5,6 @@ use crate::tree::*;
 
 // implements all iterators for the given functions
 // this allows quickly and easily set them up for all chunks
-// TODO: doc comments: In particular, it's the $(#[$($attrss:tt)*])* pattern to match attributes, and the $(#[$($attrss)*])* expression to emit them that you want.
 macro_rules! impl_all_iterators {
     (
 		$name:ident,
