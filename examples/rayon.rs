@@ -54,12 +54,12 @@ fn main() {
             );
 
             // if there was an update, we need to first generate new chunks with expensive_init
-            tree.get_chunks_to_add_slice_mut()
-                .par_iter_mut()
-                .for_each(|ToAddContainer{position, chunk}| {
+            tree.get_chunks_to_add_slice_mut().par_iter_mut().for_each(
+                |ToAddContainer { position, chunk }| {
                     // and run expensive init
                     chunk.expensive_init(*position);
-                });
+                },
+            );
 
             // and make all chunks visible or not
             for chunk in tree.iter_chunks_to_activate_mut() {

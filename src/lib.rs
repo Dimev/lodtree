@@ -157,13 +157,12 @@
 //! - `chunks_to_delete`: Chunks that are permanently removed from the tree, as they were removed from the tree itself, and will now also be removed from the chunk cache
 //!
 //! Cached chunks are also stored seperate from the tree, inside a HashMap. These can't be accessed.
-//! 
+//!
 //! # Iterators
 //! Iterators are provided for each chunk group, in the flavour of chunks, mutable chunks, chunk and positions and mutable chunk and positions.
-//! 
+//!
 //! # Getters
 //! Getters are also given for all chunk groups, in the flavor of get a chunk, get a mutable chunk, get a mutable pointer to a chunk and get the position of a chunk.
-
 
 pub mod coords;
 pub mod iter;

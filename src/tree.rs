@@ -8,75 +8,69 @@ use std::num::NonZeroUsize;
 // struct for keeping track of chunks
 // keeps track of the parent and child indices
 #[derive(Copy, Clone, Debug, Default)]
-struct TreeNode {
+pub(crate) struct TreeNode {
     // children, these can't be the root (index 0), so we can use Some and Nonzero for slightly more compact memory
     // children are also contiguous, so we can assume that this to this + num children - 1 are all the children of this node
-    children: Option<NonZeroUsize>,
+    pub(crate) children: Option<NonZeroUsize>,
 
     // where the chunk for this node is stored
-    chunk: usize,
+    pub(crate) chunk: usize,
 }
 
 // utility struct for holding actual chunks and the node that owns them
 #[derive(Clone, Debug)]
-struct ChunkContainer<C: Sized, L: LodVec>
-{
-    chunk: C,
-    index: usize,
-    position: L,
+pub(crate) struct ChunkContainer<C: Sized, L: LodVec> {
+    pub(crate) chunk: C,
+    pub(crate) index: usize,
+    pub(crate) position: L,
 }
 
 /// holds a chunk to add and it's position
 /// modifying the position won't have any effect on where the chunk is placed in the tree
 /// however it will be different when retrieving chunks from the tree
 #[derive(Clone, Debug)]
-pub struct ToAddContainer<C: Sized, L: LodVec>
-{
-	/// The chunk that's going to be added
-    pub chunk: C, 
+pub struct ToAddContainer<C: Sized, L: LodVec> {
+    /// The chunk that's going to be added
+    pub chunk: C,
 
-	/// Position of the chunk to add
-	pub position: L, 
+    /// Position of the chunk to add
+    pub position: L,
 }
 
 // utility struct for holding chunks to remove
 #[derive(Clone, Debug)]
-struct ToRemoveContainer
-{
-    chunk: usize, // chunk index
-	parent: usize, // parent index
+struct ToRemoveContainer {
+    chunk: usize,  // chunk index
+    parent: usize, // parent index
 }
 
 /// holds a chunk that's going to be deleted and it's position
 #[derive(Clone, Debug)]
-pub struct ToDeleteContainer<C: Sized, L: LodVec>
-{
+pub struct ToDeleteContainer<C: Sized, L: LodVec> {
     /// The chunk that's going to be deleted
-    pub chunk: C, 
+    pub chunk: C,
 
-	/// Position of the chunk
-	pub position: L,
+    /// Position of the chunk
+    pub position: L,
 }
 
 // utility struct for holding chunks in the queue
 #[derive(Clone, Debug)]
-struct QueueContainer<L: LodVec>
-{
+struct QueueContainer<L: LodVec> {
     node: usize, // chunk index
-	position: L, // and it's position
+    position: L, // and it's position
 }
 
 // Tree holding all chunks
 // partially based on: https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
 // assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes.
 #[derive(Clone, Debug)]
-pub struct Tree<C: Sized, L: LodVec>
-{
+pub struct Tree<C: Sized, L: LodVec> {
     /// All chunks in the tree
-    chunks: Vec<ChunkContainer<C, L>>,
+    pub(crate) chunks: Vec<ChunkContainer<C, L>>,
 
     /// nodes in the Tree
-    nodes: Vec<TreeNode>,
+    pub(crate) nodes: Vec<TreeNode>,
 
     /// list of free nodes in the Tree, to allocate new nodes into
     free_list: VecDeque<usize>,
@@ -118,6 +112,43 @@ where
     C: Sized,
     L: LodVec,
 {
+    // helper function for later, gets a node index from a position
+    fn get_node_index_from_position(&self, position: L) -> Option<usize> {
+        // the current node
+        let mut current = *self.nodes.get(0)?;
+
+        // and position
+        let mut current_position = L::root();
+
+        // then loop
+        loop {
+            // if the current node is the one we are looking for, return
+            if current_position == position {
+                return Some(current.chunk);
+            }
+
+            // if the current node does not have children, stop
+            if current.children.is_none() {
+                return None;
+            }
+
+            // if not, go over the node children
+            if let Some((index, found_position)) = (0..L::num_children())
+                .map(|i| (i, current_position.get_child(i)))
+                .find(|(_, x)| x.contains_child_node(position))
+            {
+                // we found the position to go to
+                current_position = found_position;
+
+                // and the node is at the index of the child nodes + index
+                current = self.nodes[current.children.unwrap().get() + index];
+            } else {
+                // if no child got found that matched the item, return none
+                return None;
+            }
+        }
+    }
+
     /// create a new, empty tree
     pub fn new(cache_size: usize) -> Self {
         // make a new Tree
@@ -151,43 +182,16 @@ where
         &self.chunks[index].chunk
     }
 
-    /// get a chunk by position
-	/// DOESN'T WORK YET, TODO: DON'T USE CAN_SUBDIVIDE
+    /// get a chunk by position, or none if it's not in the tree
+    #[inline]
     pub fn get_chunk_from_position(&self, position: L) -> Option<&C> {
-        // the current node
-        let mut current = *self.nodes.get(0)?;
+        Some(&self.chunks[self.get_node_index_from_position(position)?].chunk)
+    }
 
-        // and position
-        let mut current_position = L::root();
-
-        // then loop
-        loop {
-            
-            // if the current node is the one we are looking for, return
-            if current_position == position {
-                return Some(&self.chunks[current.chunk].chunk);
-            }
-
-			// if the current node does not have children, stop
-            if current.children.is_none() {
-                return None;
-            }
-
-            // if not, go over the node children
-            if let Some((index, found_position)) = (0..L::num_children())
-                .map(|i| (i, current_position.get_child(i)))
-                .find(|(_, x)| position.can_subdivide(*x, 0))
-            {
-                // we found the position to go to
-                current_position = found_position;
-
-                // and the node is at the index of the child nodes + index
-                current = self.nodes[current.children.unwrap().get() + index];
-            } else {
-                // if no child got found that matched the item, return none
-                return None;
-            }
-        }
+    /// get a mutable chunk by position, or none if it's not in the tree
+    #[inline]
+    pub fn get_chunk_from_position_mut(&mut self, position: L) -> Option<&C> {
+        Some(&self.chunks[self.get_node_index_from_position(position)?].chunk)
     }
 
     /// get a chunk as mutable
@@ -426,7 +430,10 @@ where
             let chunk_to_add = self.get_chunk_from_cache(L::root(), chunk_creator);
 
             // we need to add the root as pending
-            self.chunks_to_add.push(ToAddContainer { position: L::root(), chunk: chunk_to_add} );
+            self.chunks_to_add.push(ToAddContainer {
+                position: L::root(),
+                chunk: chunk_to_add,
+            });
 
             // and the parent
             self.chunks_to_add_parent.push(0);
@@ -439,10 +446,17 @@ where
         self.processing_queue.clear();
 
         // add the root node (always at 0, if there is no root we would have returned earlier) to the processing queue
-        self.processing_queue.push(QueueContainer { position: L::root(), node: 0 });
+        self.processing_queue.push(QueueContainer {
+            position: L::root(),
+            node: 0,
+        });
 
         // then, traverse the tree, as long as something is inside the queue
-        while let Some(QueueContainer { position: current_position, node: current_node_index}) = self.processing_queue.pop() {
+        while let Some(QueueContainer {
+            position: current_position,
+            node: current_node_index,
+        }) = self.processing_queue.pop()
+        {
             // fetch the current node
             let current_node = self.nodes[current_node_index];
 
@@ -460,8 +474,10 @@ where
                         self.get_chunk_from_cache(current_position.get_child(i), chunk_creator);
 
                     // add the new chunk to be added
-                    self.chunks_to_add
-                        .push(ToAddContainer { position: current_position.get_child(i), chunk: chunk_to_add });
+                    self.chunks_to_add.push(ToAddContainer {
+                        position: current_position.get_child(i),
+                        chunk: chunk_to_add,
+                    });
 
                     // and add the parent
                     self.chunks_to_add_parent.push(current_node_index);
@@ -481,14 +497,18 @@ where
 
                     for i in 0..L::num_children() {
                         // no need to do this in reverse, that way the last node removed will be added to the free list, which is also the first thing used by the adding logic
-                        self.chunks_to_remove
-                            .push(ToRemoveContainer { chunk: index.get() + i, parent: current_node_index });
+                        self.chunks_to_remove.push(ToRemoveContainer {
+                            chunk: index.get() + i,
+                            parent: current_node_index,
+                        });
                     }
                 } else {
                     // queue child nodes for processing if we didn't subdivide or clean up our children
                     for i in 0..L::num_children() {
-                        self.processing_queue
-                            .push(QueueContainer { position: current_position.get_child(i), node: index.get() + i });
+                        self.processing_queue.push(QueueContainer {
+                            position: current_position.get_child(i),
+                            node: index.get() + i,
+                        });
                     }
                 }
             }
@@ -514,7 +534,10 @@ where
 
         // then, remove old chunks, or cache them
         // we'll drain the vector, as we don't need it anymore afterward
-        for ToRemoveContainer { chunk: index, parent: parent_index} in self.chunks_to_remove.drain(..)
+        for ToRemoveContainer {
+            chunk: index,
+            parent: parent_index,
+        } in self.chunks_to_remove.drain(..)
         // but we do need to cache these
         {
             // remove the node from the tree
@@ -526,7 +549,9 @@ where
 
             // but not so fast, because if we can overwrite it with a new chunk, do so
             // that way we can avoid a copy later on, which might be expensive
-            if let Some((parent_index, ToAddContainer {position, chunk})) = chunks_to_add_iter.next() {
+            if let Some((parent_index, ToAddContainer { position, chunk })) =
+                chunks_to_add_iter.next()
+            {
                 // add the node
                 let new_node_index = match self.free_list.pop_front() {
                     Some(x) => {
@@ -557,7 +582,10 @@ where
                                 if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position)
                                 {
                                     // if it is, it's removed, so we need to push it to the chunks that are going to be deleted
-                                    self.chunks_to_delete.push(ToDeleteContainer { position: chunk_position, chunk: cached_chunk});
+                                    self.chunks_to_delete.push(ToDeleteContainer {
+                                        position: chunk_position,
+                                        chunk: cached_chunk,
+                                    });
                                 }
                             } else {
                                 // just break, otherwise we'll be stuck in an infinite loop
@@ -570,8 +598,10 @@ where
                             self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
                         {
                             // there might have been another cached chunk
-                            self.chunks_to_delete
-                                .push(ToDeleteContainer { position: old_chunk.position, chunk: cached_chunk});
+                            self.chunks_to_delete.push(ToDeleteContainer {
+                                position: old_chunk.position,
+                                chunk: cached_chunk,
+                            });
                         }
 
                         // and make sure it's tracked
@@ -604,7 +634,10 @@ where
                         // check if the chunk is inside the map
                         if let Some(cached_chunk) = self.chunk_cache.remove(&chunk_position) {
                             // if it is, it's removed, so we need to push it to the chunks that are going to be deleted
-                            self.chunks_to_delete.push(ToDeleteContainer { position: chunk_position, chunk: cached_chunk});
+                            self.chunks_to_delete.push(ToDeleteContainer {
+                                position: chunk_position,
+                                chunk: cached_chunk,
+                            });
                         }
                     } else {
                         // just break, otherwise we'll be stuck in an infinite loop
@@ -617,8 +650,10 @@ where
                     self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
                 {
                     // there might have been another cached chunk
-                    self.chunks_to_delete
-                        .push(ToDeleteContainer { position: old_chunk.position, chunk: cached_chunk});
+                    self.chunks_to_delete.push(ToDeleteContainer {
+                        position: old_chunk.position,
+                        chunk: cached_chunk,
+                    });
                 }
 
                 // and make sure it's tracked
@@ -634,7 +669,7 @@ where
 
         // add new chunks
         // we'll drain the vector here as well, as we won't need it anymore afterward
-        for (parent_index, ToAddContainer {position, chunk }) in chunks_to_add_iter {
+        for (parent_index, ToAddContainer { position, chunk }) in chunks_to_add_iter {
             // add the node
             let new_node_index = match self.free_list.pop_front() {
                 Some(x) => {
@@ -730,7 +765,9 @@ where
         self.chunks_to_remove.shrink_to_fit();
         self.chunks_to_activate.shrink_to_fit();
         self.chunks_to_deactivate.shrink_to_fit();
+        self.chunks_to_delete.shrink_to_fit();
         self.processing_queue.shrink_to_fit();
+        self.cache_queue.shrink_to_fit();
     }
 
     /// resizes the current cache size
@@ -787,12 +824,11 @@ mod tests {
             tree.do_update();
         }
 
+        // get the resulting chunk from a search
+        let found_chunk = tree.get_chunk_from_position(QuadVec::new(16, 8, 16));
+
         // and find the resulting chunk
-        println!(
-            "{:?}",
-            tree.get_chunk_from_position(QuadVec::new(2, 2, 2))
-                .is_some()
-        );
+        println!("{:?}", found_chunk.is_some());
 
         // and make the tree have no items
         while tree.prepare_update(&[], 8, |_| TestChunk {}) {

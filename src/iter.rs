@@ -274,15 +274,15 @@ impl_all_iterators!(
     get_chunk,
     get_chunk_pointer_mut,
     get_chunk_position,
-	/// returns an iterator over all chunks
+    /// returns an iterator over all chunks
     iter_chunks,
-	/// returns an iterator over all chunks, mutable
+    /// returns an iterator over all chunks, mutable
     iter_chunks_mut,
-	/// returns an iterator over all positions of all chunks
+    /// returns an iterator over all positions of all chunks
     iter_chunk_positions,
-	/// returns an iterator over all chunks and their positions 
+    /// returns an iterator over all chunks and their positions
     iter_chunks_and_positions,
-	/// returns an iterator over all chunks as mutable and their positions 
+    /// returns an iterator over all chunks as mutable and their positions
     iter_chunks_and_positions_mut,
 );
 
@@ -297,15 +297,15 @@ impl_all_iterators!(
     get_chunk_to_activate,
     get_chunk_to_activate_pointer_mut,
     get_position_of_chunk_to_activate,
-	/// returns an iterator over all chunks to activate
+    /// returns an iterator over all chunks to activate
     iter_chunks_to_activate,
-	/// returns an iterator over all chunks to activate, mutable
+    /// returns an iterator over all chunks to activate, mutable
     iter_chunks_to_activate_mut,
-	/// returns an iterator over all positions of all chunks to activate
+    /// returns an iterator over all positions of all chunks to activate
     iter_chunks_to_activate_positions,
-	/// returns an iterator over all chunks to activate and their positions 
+    /// returns an iterator over all chunks to activate and their positions
     iter_chunks_to_activate_and_positions,
-	/// returns an iterator over all chunks to activate as mutable and their positions 
+    /// returns an iterator over all chunks to activate as mutable and their positions
     iter_chunks_to_activate_and_positions_mut,
 );
 
@@ -322,13 +322,13 @@ impl_all_iterators!(
     get_position_of_chunk_to_deactivate,
     /// returns an iterator over all chunks to deactivate
     iter_chunks_to_deactivate,
-	/// returns an iterator over all chunks to deactivate, mutable
+    /// returns an iterator over all chunks to deactivate, mutable
     iter_chunks_to_deactivate_mut,
-	/// returns an iterator over all positions of all chunks to deactivate
+    /// returns an iterator over all positions of all chunks to deactivate
     iter_chunks_to_deactivate_positions,
-	/// returns an iterator over all chunks to deactivate and their positions 
+    /// returns an iterator over all chunks to deactivate and their positions
     iter_chunks_to_deactivate_and_positions,
-	/// returns an iterator over all chunks to deactivate as mutable and their positions 
+    /// returns an iterator over all chunks to deactivate as mutable and their positions
     iter_chunks_to_deactivate_and_positions_mut,
 );
 
@@ -345,13 +345,13 @@ impl_all_iterators!(
     get_position_of_chunk_to_add,
     /// returns an iterator over all chunks to add
     iter_chunks_to_add,
-	/// returns an iterator over all chunks to add, mutable
+    /// returns an iterator over all chunks to add, mutable
     iter_chunks_to_add_mut,
-	/// returns an iterator over all positions of all chunks to add
+    /// returns an iterator over all positions of all chunks to add
     iter_chunks_to_add_positions,
-	/// returns an iterator over all chunks to add and their positions 
+    /// returns an iterator over all chunks to add and their positions
     iter_chunks_to_add_and_positions,
-	/// returns an iterator over all chunks to add as mutable and their positions 
+    /// returns an iterator over all chunks to add as mutable and their positions
     iter_chunks_to_add_and_positions_mut,
 );
 
@@ -368,13 +368,13 @@ impl_all_iterators!(
     get_position_of_chunk_to_remove,
     /// returns an iterator over all chunks to remove
     iter_chunks_to_remove,
-	/// returns an iterator over all chunks to remove, mutable
+    /// returns an iterator over all chunks to remove, mutable
     iter_chunks_to_remove_mut,
-	/// returns an iterator over all positions of all chunks to remove
+    /// returns an iterator over all positions of all chunks to remove
     iter_chunks_to_remove_positions,
-	/// returns an iterator over all chunks to remove and their positions 
+    /// returns an iterator over all chunks to remove and their positions
     iter_chunks_to_remove_and_positions,
-	/// returns an iterator over all chunks to remove as mutable and their positions 
+    /// returns an iterator over all chunks to remove as mutable and their positions
     iter_chunks_to_remove_and_positions_mut,
 );
 
@@ -391,13 +391,13 @@ impl_all_iterators!(
     get_position_of_chunk_to_delete,
     /// returns an iterator over all chunks to delete
     iter_chunks_to_delete,
-	/// returns an iterator over all chunks to delete, mutable
+    /// returns an iterator over all chunks to delete, mutable
     iter_chunks_to_delete_mut,
-	/// returns an iterator over all positions of all chunks to delete
+    /// returns an iterator over all positions of all chunks to delete
     iter_chunks_to_delete_positions,
-	/// returns an iterator over all chunks to delete and their positions 
+    /// returns an iterator over all chunks to delete and their positions
     iter_chunks_to_delete_and_positions,
-	/// returns an iterator over all chunks to delete as mutable and their positions 
+    /// returns an iterator over all chunks to delete as mutable and their positions
     iter_chunks_to_delete_and_positions_mut,
 );
 
@@ -416,26 +416,132 @@ pub struct ChunksInBoundIter<L: LodVec> {
     bound_max: L,
 }
 
-// TODO: doesn't seem to work, due to is_inside_bounds
 impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
     type Item = L;
 
-	#[inline]
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
 
-		// go over all child nodes
-		for i in 0..L::num_children() {
-			let position = current.get_child(i);
+        // go over all child nodes
+        for i in 0..L::num_children() {
+            let position = current.get_child(i);
 
-			// if they are in bounds, and the correct depth, add them to the stack
-			if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
-				self.stack.push(position);
-			}
-		}
-		// and return this item from the stack
-		Some(current)
-        
+            // if they are in bounds, and the correct depth, add them to the stack
+            if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                self.stack.push(position);
+            }
+        }
+        // and return this item from the stack
+        Some(current)
+    }
+}
+
+pub struct ChunksInBoundAndMaybeTreeIter<'a, C: Sized, L: LodVec> {
+    // the tree
+    tree: &'a Tree<C, L>,
+
+    // internal stack for which chunks are next
+    stack: Vec<(L, Option<TreeNode>)>,
+
+    // and maximum depth to go to
+    max_depth: u64,
+
+    // and the min of the bound
+    bound_min: L,
+
+    // and max of the bound
+    bound_max: L,
+}
+
+impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIter<'a, C, L> {
+    type Item = (L, Option<&'a C>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let (current_position, current_node) = self.stack.pop()?;
+
+        // go over all child nodes
+        for i in 0..L::num_children() {
+            let position = current_position.get_child(i);
+
+            // if they are in bounds, and the correct depth, add them to the stack
+            if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                // also, check if the node has children
+                if let Some(node) = current_node {
+                    // and if it has children
+                    if let Some(children) = node.children {
+                        // children, so node
+                        self.stack
+                            .push((position, Some(self.tree.nodes[children.get() + i])));
+                    } else {
+                        // no node, so no chunk
+                        self.stack.push((position, None));
+                    }
+                } else {
+                    // no node, so no chunk
+                    self.stack.push((position, None));
+                }
+            }
+        }
+        // and return this item from the stack
+        if let Some(node) = current_node {
+            // there is a node, so get the chunk it has
+            let chunk = &self.tree.chunks[node.chunk].chunk;
+
+            // and return it
+            Some((current_position, Some(chunk)))
+        } else {
+            // no chunk, so return that as None
+            Some((current_position, None))
+        }
+    }
+}
+
+pub struct ChunksInBoundAndTreeIter<'a, C: Sized, L: LodVec> {
+    // the tree
+    tree: &'a Tree<C, L>,
+
+    // internal stack for which chunks are next
+    stack: Vec<(L, TreeNode)>,
+
+    // and maximum depth to go to
+    max_depth: u64,
+
+    // and the min of the bound
+    bound_min: L,
+
+    // and max of the bound
+    bound_max: L,
+}
+
+impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIter<'a, C, L> {
+    type Item = (L, &'a C);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let (current_position, current_node) = self.stack.pop()?;
+
+        // go over all child nodes
+        for i in 0..L::num_children() {
+            let position = current_position.get_child(i);
+
+            // if the node has children
+            if let Some(children) = current_node.children {
+                // if they are in bounds, and the correct depth, add them to the stack
+                if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                    // and push to the stack
+                    self.stack
+                        .push((position, self.tree.nodes[children.get() + i]));
+                }
+            }
+        }
+
+        // and return the position and node
+        Some((
+            current_position,
+            &self.tree.chunks[current_node.chunk].chunk,
+        ))
     }
 }
 
@@ -465,24 +571,25 @@ where
     }
 
     // iterate over all chunks that would be affected by an edit, including the chunk if it's in the tree
-	// might need to be implemented inside tree.rs
+    // might need to be implemented inside tree.rs
 }
 
 #[cfg(test)]
 mod tests {
 
-	use super::*;
-	use crate::coords::*;
+    use super::*;
+    use crate::coords::*;
 
-	#[test]
-	fn test_bounds() {
+    #[test]
+    fn test_bounds() {
+        struct C;
 
-		struct C;
-
-		for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(QuadVec::new(1, 1, 4), QuadVec::new(8, 8, 4), 4) {
-
-			println!("{:?}", pos);
-
-		}
-	}
+        for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(
+            QuadVec::new(1, 1, 4),
+            QuadVec::new(8, 8, 4),
+            4,
+        ) {
+            println!("{:?}", pos);
+        }
+    }
 }

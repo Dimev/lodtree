@@ -157,6 +157,19 @@ impl LodVec for QuadVec {
             && self_y >= min_y
             && self_y < max_y
     }
+
+    #[inline]
+    fn contains_child_node(self, child: Self) -> bool {
+        // basically, move the child node up to this level and check if they're equal
+        let level_difference = child.depth - self.depth;
+
+        // and move
+        let x = child.x >> level_difference;
+        let y = child.y >> level_difference;
+
+        // and check
+        self.x == x && self.y == y
+    }
 }
 
 /// A Lod Vector for use in an octree.
@@ -341,5 +354,19 @@ impl LodVec for OctVec {
             && self_y < max_y
             && self_z >= min_z
             && self_z < max_z
+    }
+
+    #[inline]
+    fn contains_child_node(self, child: Self) -> bool {
+        // basically, move the child node up to this level and check if they're equal
+        let level_difference = child.depth - self.depth;
+
+        // and move
+        let x = child.x >> level_difference;
+        let y = child.y >> level_difference;
+        let z = child.z >> level_difference;
+
+        // and check
+        self.x == x && self.y == y && self.z == z
     }
 }

@@ -110,8 +110,8 @@ tree.complete_update();
 ### 0.2.0:
  - Support getting "edited" chunks, via also passing along a region in which chunks would be edited. PARTIALLY DONE, NEEDS DOCS
  - caching DONE
- - iterators for all chunk data accessing methods. DONE, NEEDS DOCS
- - getting a chunk by position HAS BUGS
+ - iterators for all chunk data accessing methods. DONE
+ - getting a chunk by position DONE
  - swap L and C, so the key (position) is before the chunk, which is consistent with other key-value datatypes in rust
 ### 0.3.0:
  - progressive loading (double bounds check, one for when to subdivide and one for when to merge, as well as limit on the amount of things we can add at a time)
