@@ -90,13 +90,13 @@ fn main() {
 
 			void main() {
 
-				if (state == 0) gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0); // new, white
-				if (state == 1) gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0); // merged, green
-				if (state == 2) gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0); // from cache, red
-				if (state == 3) gl_FragColor = vec4(1.0, 1.0, 0.5, 1.0); // both, yellow
+				if (state == 0) gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // new, white
+				if (state == 1) gl_FragColor = vec4(0.0, 0.2, 0.0, 1.0); // merged, green
+				if (state == 2) gl_FragColor = vec4(0.2, 0.0, 0.0, 1.0); // from cache, red
+				if (state == 3) gl_FragColor = vec4(0.3, 0.3, 0.0, 1.0); // both, yellow
 
-				if (selected != 0) gl_FragColor = vec4(0.5, 1.0, 1.0, 1.0); // selected, so blue
-				if (in_bounds != 0) gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0); // in bounds, so purple
+				if (selected != 0) gl_FragColor = vec4(0.0, 0.8, 0.8, 1.0); // selected, so blue
+				if (in_bounds != 0) gl_FragColor = vec4(0.0, 0.0, 0.2, 1.0); // in bounds, so purple
 
 			}
 		"
@@ -166,7 +166,7 @@ fn main() {
 
         // and, Redraw!
         let mut target = display.draw();
-        target.clear_color(0.1, 0.1, 0.1, 0.1);
+        target.clear_color(0.8, 0.8, 0.8, 1.0);
 
         // go over all chunks, iterator version
         for (chunk, position) in tree.iter_chunks_and_positions() {
