@@ -185,13 +185,21 @@ where
     /// get a chunk by position, or none if it's not in the tree
     #[inline]
     pub fn get_chunk_from_position(&self, position: L) -> Option<&C> {
-        Some(&self.chunks[self.get_node_index_from_position(position)?].chunk)
+		// get the index of the chunk
+		let chunk_index = self.get_node_index_from_position(position)?;
+
+		// and return the chunk
+        Some(&self.chunks[chunk_index].chunk)
     }
 
     /// get a mutable chunk by position, or none if it's not in the tree
     #[inline]
-    pub fn get_chunk_from_position_mut(&mut self, position: L) -> Option<&C> {
-        Some(&self.chunks[self.get_node_index_from_position(position)?].chunk)
+    pub fn get_chunk_from_position_mut(&mut self, position: L) -> Option<&mut C> {
+        // get the index of the chunk
+		let chunk_index = self.get_node_index_from_position(position)?;
+
+		// and return the chunk
+        Some(&mut self.chunks[chunk_index].chunk)
     }
 
     /// get a chunk as mutable

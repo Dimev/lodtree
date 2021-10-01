@@ -545,6 +545,116 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIter<'a, C, L> {
     }
 }
 
+pub struct ChunksInBoundAndMaybeTreeIterMut<'a, C: Sized, L: LodVec> {
+    // the tree
+    tree: &'a mut Tree<C, L>,
+
+    // internal stack for which chunks are next
+    stack: Vec<(L, Option<TreeNode>)>,
+
+    // and maximum depth to go to
+    max_depth: u64,
+
+    // and the min of the bound
+    bound_min: L,
+
+    // and max of the bound
+    bound_max: L,
+}
+
+impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, C, L> {
+    type Item = (L, Option<&'a mut C>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let (current_position, current_node) = self.stack.pop()?;
+
+        // go over all child nodes
+        for i in 0..L::num_children() {
+            let position = current_position.get_child(i);
+
+            // if they are in bounds, and the correct depth, add them to the stack
+            if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                // also, check if the node has children
+                if let Some(node) = current_node {
+                    // and if it has children
+                    if let Some(children) = node.children {
+                        // children, so node
+                        self.stack
+                            .push((position, Some(self.tree.nodes[children.get() + i])));
+                    } else {
+                        // no node, so no chunk
+                        self.stack.push((position, None));
+                    }
+                } else {
+                    // no node, so no chunk
+                    self.stack.push((position, None));
+                }
+            }
+        }
+        // and return this item from the stack
+        if let Some(node) = current_node {
+            // there is a node, so get the chunk it has
+            let chunk = &mut self.tree.chunks[node.chunk].chunk as *mut C;
+
+            // and return it
+			// Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
+            Some((current_position, Some(unsafe { chunk.as_mut()? })))
+        } else {
+            // no chunk, so return that as None
+            Some((current_position, None))
+        }
+    }
+}
+
+pub struct ChunksInBoundAndTreeIterMut<'a, C: Sized, L: LodVec> {
+    // the tree
+    tree: &'a mut Tree<C, L>,
+
+    // internal stack for which chunks are next
+    stack: Vec<(L, TreeNode)>,
+
+    // and maximum depth to go to
+    max_depth: u64,
+
+    // and the min of the bound
+    bound_min: L,
+
+    // and max of the bound
+    bound_max: L,
+}
+
+impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L> {
+    type Item = (L, &'a mut C);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let (current_position, current_node) = self.stack.pop()?;
+
+        // go over all child nodes
+        for i in 0..L::num_children() {
+            let position = current_position.get_child(i);
+
+            // if the node has children
+            if let Some(children) = current_node.children {
+                // if they are in bounds, and the correct depth, add them to the stack
+                if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                    // and push to the stack
+                    self.stack
+                        .push((position, self.tree.nodes[children.get() + i]));
+                }
+            }
+        }
+
+        // and return the position and node
+		// Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
+        Some((
+            current_position,
+            unsafe { (&mut self.tree.chunks[current_node.chunk].chunk as *mut C).as_mut()? },
+        ))
+    }
+}
+
 // TODO: iterator that also goes over chunks in the tree
 // as in: chunks in tree and bounds, immutable and mutable
 // all chunks in the bounds, and ones in the tree, if any
