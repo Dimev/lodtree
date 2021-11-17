@@ -8,8 +8,8 @@ use lodtree::*;
 struct Chunk {
     visible: bool,
     cache_state: i32, // 0 is new, 1 is merged, 2 is cached, 3 is both
-	selected: bool,
-	in_bounds: bool,
+    selected: bool,
+    in_bounds: bool,
 }
 
 fn main() {
@@ -86,17 +86,15 @@ fn main() {
 			uniform int selected;
 			uniform int in_bounds;
 
-			out vec4 gl_FragColor;
-
 			void main() {
 
-				if (state == 0) gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // new, white
+				if (state == 0) gl_FragColor = vec4(0.2, 0.2, 0.2, 1.0); // new, white
 				if (state == 1) gl_FragColor = vec4(0.0, 0.2, 0.0, 1.0); // merged, green
 				if (state == 2) gl_FragColor = vec4(0.2, 0.0, 0.0, 1.0); // from cache, red
-				if (state == 3) gl_FragColor = vec4(0.3, 0.3, 0.0, 1.0); // both, yellow
+				if (state == 3) gl_FragColor = vec4(0.4, 0.2, 0.0, 1.0); // both, yellow
 
-				if (selected != 0) gl_FragColor = vec4(0.0, 0.8, 0.8, 1.0); // selected, so blue
-				if (in_bounds != 0) gl_FragColor = vec4(0.0, 0.0, 0.2, 1.0); // in bounds, so purple
+				if (selected != 0) gl_FragColor = vec4(0.0, 0.2, 0.2, 1.0); // selected, so blue
+				if (in_bounds != 0) gl_FragColor = vec4(0.0, 0.2, 0.2, 1.0); // in bounds, so purple
 
 			}
 		"
@@ -119,8 +117,8 @@ fn main() {
             |_position| Chunk {
                 visible: true,
                 cache_state: 0,
-				selected: false,
-				in_bounds: false,
+                selected: false,
+                in_bounds: false,
             },
         ) {
             // position should already have been set, so we can just change the visibility
@@ -143,30 +141,27 @@ fn main() {
 
             // and clean
             tree.complete_update();
-
         }
 
-		// go over all chunks in the tree and set them to not be selected
-		for chunk in tree.iter_chunks_mut() {
-			chunk.selected = false;
-		}
+        // go over all chunks in the tree and set them to not be selected
+        for chunk in tree.iter_chunks_mut() {
+            chunk.selected = false;
+        }
 
-		// and select the chunk at the mouse position
-		if let Some(chunk) = tree.get_chunk_from_position_mut(QuadVec::from_float_coords(
-			mouse_pos.0,
-			1.0 - mouse_pos.1,
-			6
-		)) {
+        // and select the chunk at the mouse position
+        if let Some(chunk) = tree.get_chunk_from_position_mut(QuadVec::from_float_coords(
+            mouse_pos.0,
+            1.0 - mouse_pos.1,
+            6,
+        )) {
+            chunk.selected = true;
+        }
 
-			chunk.selected = true;
-
-		}
-
-		// and select a number of chunks in a region when the mouse buttons are selected
+        // and select a number of chunks in a region when the mouse buttons are selected
 
         // and, Redraw!
         let mut target = display.draw();
-        target.clear_color(0.8, 0.8, 0.8, 1.0);
+        target.clear_color(0.6, 0.6, 0.6, 1.0);
 
         // go over all chunks, iterator version
         for (chunk, position) in tree.iter_chunks_and_positions() {
@@ -177,7 +172,7 @@ fn main() {
                     offset: [position.get_float_coords().0 as f32, position.get_float_coords().1 as f32],
                     scale: position.get_size() as f32,
                     state: chunk.cache_state,
-					selected: chunk.selected as i32,
+                    selected: chunk.selected as i32,
                 };
 
                 // draw it with glium

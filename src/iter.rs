@@ -598,7 +598,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, 
             let chunk = &mut self.tree.chunks[node.chunk].chunk as *mut C;
 
             // and return it
-			// Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
+            // Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
             Some((current_position, Some(unsafe { chunk.as_mut()? })))
         } else {
             // no chunk, so return that as None
@@ -647,11 +647,10 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L>
         }
 
         // and return the position and node
-		// Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
-        Some((
-            current_position,
-            unsafe { (&mut self.tree.chunks[current_node.chunk].chunk as *mut C).as_mut()? },
-        ))
+        // Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
+        Some((current_position, unsafe {
+            (&mut self.tree.chunks[current_node.chunk].chunk as *mut C).as_mut()?
+        }))
     }
 }
 
