@@ -128,9 +128,9 @@ where
             }
 
             // if the current node does not have children, stop
-            if current.children.is_none() {
-                return None;
-            }
+			// this works according to clippy
+            current.children?;
+            
 
             // if not, go over the node children
             if let Some((index, found_position)) = (0..L::num_children())
@@ -766,6 +766,9 @@ where
     /// Due to most of the intermediate processing buffers being cleared after an update is done, the next update might take longer due to needing to reallocate the memory.
     #[inline]
     pub fn shrink(&mut self) {
+        // it should be possible to also shrink the nodes as well, and remove the free space, but this would be rather dificult to do
+        // because we have groups of num_children
+        // I'm leaving it out for now
         self.chunks.shrink_to_fit();
         self.nodes.shrink_to_fit();
         self.free_list.shrink_to_fit();

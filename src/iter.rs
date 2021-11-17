@@ -664,7 +664,7 @@ where
     L: LodVec,
     Self: 'a,
 {
-    // iterate over all chunks that would be affected by an edit inside a certain bound
+    /// iterate over all chunks that would be affected by an edit inside a certain bound
     #[inline]
     pub fn iter_all_chunks_in_bounds(
         bound_min: L,
@@ -679,8 +679,89 @@ where
         }
     }
 
-    // iterate over all chunks that would be affected by an edit, including the chunk if it's in the tree
-    // might need to be implemented inside tree.rs
+    /// iterate over all chunks that would be affected by an edit, including the chunk if it's in the tree
+    #[inline]
+    pub fn iter_all_chunks_in_bounds_and_maybe_tree(
+        &'a self,
+        bound_min: L,
+        bound_max: L,
+        max_depth: u64,
+    ) -> ChunksInBoundAndMaybeTreeIter<C, L> {
+        ChunksInBoundAndMaybeTreeIter {
+            stack: vec![(L::root(), self.nodes.first().copied())],
+            tree: self,
+            max_depth,
+            bound_min,
+            bound_max,
+        }
+    }
+
+    /// iterate over all chunks that would be affected by an edit, and the chunk that's in the tree.
+    /// Skips any chunks that are not in the tree
+    #[inline]
+    pub fn iter_all_chunks_in_bounds_and_tree(
+        &'a self,
+        bound_min: L,
+        bound_max: L,
+        max_depth: u64,
+    ) -> ChunksInBoundAndTreeIter<C, L> {
+        // get the stack, empty if we can't get the first node
+        let stack = if let Some(node) = self.nodes.first() {
+            vec![(L::root(), *node)]
+        } else {
+            vec![]
+        };
+
+        ChunksInBoundAndTreeIter {
+            stack,
+            tree: self,
+            max_depth,
+            bound_min,
+            bound_max,
+        }
+    }
+
+    /// iterate over all chunks that would be affected by an edit, including the mutable chunk if it's in the tree
+    #[inline]
+    pub fn iter_all_chunks_in_bounds_and_maybe_tree_mut(
+        &'a mut self,
+        bound_min: L,
+        bound_max: L,
+        max_depth: u64,
+    ) -> ChunksInBoundAndMaybeTreeIterMut<C, L> {
+        ChunksInBoundAndMaybeTreeIterMut {
+            stack: vec![(L::root(), self.nodes.first().copied())],
+            tree: self,
+            max_depth,
+            bound_min,
+            bound_max,
+        }
+    }
+
+    /// iterate over all chunks that would be affected by an edit, and the chunk that's in the tree as mutable.
+    /// Skips any chunks that are not in the tree
+    #[inline]
+    pub fn iter_all_chunks_in_bounds_and_tree_mut(
+        &'a mut self,
+        bound_min: L,
+        bound_max: L,
+        max_depth: u64,
+    ) -> ChunksInBoundAndTreeIterMut<C, L> {
+        // get the stack, empty if we can't get the first node
+        let stack = if let Some(node) = self.nodes.first() {
+            vec![(L::root(), *node)]
+        } else {
+            vec![]
+        };
+
+        ChunksInBoundAndTreeIterMut {
+            stack,
+            tree: self,
+            max_depth,
+            bound_min,
+            bound_max,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -688,6 +769,8 @@ mod tests {
 
     use super::*;
     use crate::coords::*;
+
+	// TODO: also test the other iters
 
     #[test]
     fn test_bounds() {
