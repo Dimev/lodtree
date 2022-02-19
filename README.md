@@ -114,7 +114,8 @@ tree.complete_update();
  - getting a chunk by position DONE
  - swap L and C, so the key (position) is before the chunk, which is consistent with other key-value datatypes in rust
 ### 0.3.0:
- - progressive loading (double bounds check, one for when to subdivide and one for when to merge, as well as limit on the amount of things we can add at a time)
+ - Replace the tree in favour of a list to generate all nodes up front, then use a hashmap for storage
+ - this keeps everything in one map, with optional removal from that map. Also simplifies everything as there's only "add", "add from cache", "remove to cache" and "remove entirely" instead of the current add, add from cache, remove, merge, subdivide, and delete
  - no-std (although alloc will be required here)
 
 ## License
