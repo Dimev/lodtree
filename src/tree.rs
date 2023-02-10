@@ -3,7 +3,9 @@
 use crate::traits::*;
 
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Debug;
 use std::num::NonZeroUsize;
+use crate::coords::QuadVec;
 
 // struct for keeping track of chunks
 // keeps track of the parent and child indices
@@ -19,10 +21,10 @@ pub(crate) struct TreeNode {
 
 // utility struct for holding actual chunks and the node that owns them
 #[derive(Clone, Debug)]
-pub(crate) struct ChunkContainer<C: Sized, L: LodVec> {
-    pub(crate) chunk: C,
-    pub(crate) index: usize,
-    pub(crate) position: L,
+pub struct ChunkContainer<C: Sized, L: LodVec> {
+    pub chunk: C,
+    pub index: usize,
+    pub position: L,
 }
 
 /// holds a chunk to add and it's position
@@ -107,11 +109,64 @@ pub struct Tree<C: Sized, L: LodVec> {
     chunks_to_delete: Vec<ToDeleteContainer<C, L>>,
 }
 
+// struct TreeCursor<'a, C, L>{
+//     tree:  &'a Tree< C, L>,
+//     current: L
+// }
+//
+// impl <C, L> Iterator for TreeCursor<C, L>
+// {
+//     type Item = C;
+//
+//     fn next(&mut self) -> Option<Self::Item> {
+//         Some(self.c)
+//     }
+// }
+
 impl<C, L> Tree<C, L>
 where
     C: Sized,
     L: LodVec,
 {
+    pub fn search_around(&mut self, center: L, bounds:u32, mutator: fn(&mut ChunkContainer<C, L> ))
+    where L:Debug
+    {
+
+         let mut node = *self.nodes.get(0).unwrap();
+        let mut position = L::root();
+          // then loop
+        loop {
+
+            // if the current node is the one we are looking for, return
+            if position == center {
+                mutator( self.chunks.get_mut(node.chunk).unwrap());
+            }
+
+            // if the current node does not have children, stop
+			// this works according to clippy
+            if node.children.is_none()
+            {
+                return;
+
+            }
+
+            // if not, go over the node children
+            if let Some((index, found_position)) = (0..L::num_children())
+                .map(|i| (i, position.get_child(i)))
+                .find(|(_, x)| x.contains_child_node(center))
+            {
+                // we found the position to go to
+                position = found_position;
+                dbg!(position);
+                // and the node is at the index of the child nodes + index
+                node = self.nodes[node.children.unwrap().get() + index];
+            } else {
+                // if no child got found that matched the item, return none
+                return;
+            }
+        }
+    }
+
     // helper function for later, gets a node index from a position
     fn get_node_index_from_position(&self, position: L) -> Option<usize> {
         // the current node
@@ -148,6 +203,8 @@ where
             }
         }
     }
+
+
 
     /// create a new, empty tree
     pub fn new(cache_size: usize) -> Self {
