@@ -1,5 +1,6 @@
 //! Iterators over chunks
 
+use crate::coords::QuadVec;
 use crate::traits::*;
 use crate::tree::*;
 
@@ -422,13 +423,14 @@ impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
-
+        //println!("current {:?}", current);
         // go over all child nodes
         for i in 0..L::num_children() {
             let position = current.get_child(i);
-
+            //println!("try {:?}",position);
             // if they are in bounds, and the correct depth, add them to the stack
             if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
+                //println!("push {:?}", position);
                 self.stack.push(position);
             }
         }
@@ -763,7 +765,14 @@ where
         }
     }
 }
-
+// fn correct_clipping(min:QuadVec, max:QuadVec, depth: usize){
+//
+//     for pos in Tree::<C, QuadVec>{
+//
+//         if pos. >= min.x
+//     }
+//
+// }
 #[cfg(test)]
 mod tests {
 
@@ -775,13 +784,31 @@ mod tests {
     #[test]
     fn test_bounds() {
         struct C;
-
+        let min = QuadVec::new(1, 1, 3);
+        let max = QuadVec::new(5, 3, 3);
+        let mut count = 0;
         for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(
-            QuadVec::new(1, 1, 4),
-            QuadVec::new(8, 8, 4),
-            4,
+            min, max,
+            3
         ) {
-            println!("{:?}", pos);
+            //assert!(QuadVec > min );
+            //assert!(QuadVec < max );
+            //println!("visit {:?}", pos);
         }
+        //assert!(count == 42);
+    }
+    #[test]
+    fn test_1(){
+        struct C;
+        let min = QuadVec::new(1, 1, 4);
+        let max = QuadVec::new(5, 3, 4);
+
+        for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds_and_tree_mut(&mut Default::default(),
+                                                                                                  min,
+                                                                                                  max, 3) {
+
+            println!(" Say hey {:?}", pos.0);
+        }
+
     }
 }

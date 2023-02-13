@@ -16,3 +16,5 @@ categories = ["data-structures"]
 [dev_dependencies]
 rayon = "1.5"
 glium = "0.30"
+log = "0.4.17"
+stderrlog = "0.5.4"

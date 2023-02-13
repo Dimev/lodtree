@@ -1,9 +1,11 @@
 //! Contains LodVec trait, which is needed for the coordinate system to be used in a tree.
 //! Sample implementations for this are in coords.rs.
 
+use std::fmt::Debug;
+
 /// trait for defining a Level of Detail vector.
 /// such a vector contains the current position in the octree (3d coords), as well as the lod level it's at, in integer coords.
-pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default {
+pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default + Debug {
     /// gets one of the child node position of this node, defined by it's index.
     fn get_child(self, index: usize) -> Self;
 
