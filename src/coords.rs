@@ -45,6 +45,9 @@ impl QuadVec {
     /// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher
     #[inline]
     pub fn new(x: u64, y: u64, depth: u8) -> Self {
+        debug_assert!(x < (1<<depth));
+        debug_assert!(y < (1<<depth));
+        debug_assert!(depth<=60);
         Self { x, y, depth }
     }
 
@@ -88,6 +91,7 @@ impl QuadVec {
 impl LodVec for QuadVec {
     #[inline]
     fn get_child(self, index: usize) -> Self {
+        debug_assert!(index < 4);
         // the positions, doubled in scale
         let x = self.x << 1;
         let y = self.y << 1;
@@ -159,7 +163,7 @@ impl LodVec for QuadVec {
         let self_difference = self.depth - level;
         let min_difference = min.depth - level;
         let max_difference = max.depth - level;
-
+       // println!("diff {:?},  {:?}, {:?}", self_difference, min_difference,max_difference);
         // get the coords to that level
         let self_x = self.x >> self_difference;
         let self_y = self.y >> self_difference;
@@ -169,7 +173,7 @@ impl LodVec for QuadVec {
 
         let max_x = max.x >> max_difference;
         let max_y = max.y >> max_difference;
-
+       // dbg!(min_x, min_y, max_x, max_y);
         // then check if we are inside the AABB
         self.depth as u8 <= max_depth
             && self_x >= min_x
@@ -285,6 +289,7 @@ impl OctVec {
 impl LodVec for OctVec {
     #[inline]
     fn get_child(self, index: usize) -> Self {
+         debug_assert!(index < 8);
         // the positions, doubled in scale
         let x = self.x << 1;
         let y = self.y << 1;
