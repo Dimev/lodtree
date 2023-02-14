@@ -770,10 +770,10 @@ where
 mod tests {
     use super::*;
     use crate::coords::*;
-    use std::ops::Range;
     use rand::distributions::uniform::SampleUniform;
     use rand::Rng;
     use std::cmp::Ordering;
+    use std::ops::Range;
 
     pub trait SafeRngRange {
         fn safe_uniform<T>(&mut self, range: Range<T>) -> T
@@ -806,7 +806,7 @@ mod tests {
 
         let mut rng = rand::thread_rng();
 
-        for i in 1..100 {
+        for _i in 1..100 {
             let cmax = 1 << D;
             let min = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
             let max = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
@@ -849,7 +849,7 @@ mod tests {
 
         let mut rng = rand::thread_rng();
 
-        for i in 1..100 {
+        for _i in 1..100 {
             let cmax = 1 << D;
             let min = OctVec::new(
                 rng.safe_uniform(0..cmax),
@@ -897,8 +897,8 @@ mod tests {
             visible: bool,
             cache_state: i32,
             // 0 is new, 1 is merged, 2 is cached, 3 is both
-            selected: bool,
-            in_bounds: bool,
+            // selected: bool,
+            // in_bounds: bool,
         }
 
         fn chunk_creator(position: QuadVec) -> Chunk {
@@ -913,8 +913,8 @@ mod tests {
             Chunk {
                 visible: true,
                 cache_state: visible as i32,
-                selected: false,
-                in_bounds: false,
+                // selected: false,
+                // in_bounds: false,
             }
         }
         let mut tree = Tree::new(65);
@@ -944,7 +944,7 @@ mod tests {
 
         let min = QuadVec::new(0, 0, 4);
         let max = QuadVec::new(8, 8, 4);
-        let mut count = 0;
+        let mut _count = 0;
 
         for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, 4) {
             if i.0

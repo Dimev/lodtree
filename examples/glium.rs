@@ -1,12 +1,15 @@
-use std::f32::consts::PI;
-use glium::index::PrimitiveType;
-use glium::{glutin, implement_vertex, program, uniform, Surface, Program, Display, VertexBuffer, IndexBuffer};
 use glium::glutin::event_loop::EventLoop;
+use glium::index::PrimitiveType;
+use glium::{
+    glutin, implement_vertex, program, uniform, Display, IndexBuffer, Program, Surface,
+    VertexBuffer,
+};
 
 use lodtree::coords::QuadVec;
 use lodtree::*;
 
 // the chunk struct for the tree
+#[allow(dead_code)]
 struct Chunk {
     visible: bool,
     cache_state: i32,
@@ -15,8 +18,7 @@ struct Chunk {
     in_bounds: bool,
 }
 
-fn make_shaders(display: &Display) -> Program
-{
+fn make_shaders(display: &Display) -> Program {
     let program = program!(display,
     140 => {
         vertex: "
@@ -58,7 +60,7 @@ fn make_shaders(display: &Display) -> Program
 		"
     }
     )
-        .unwrap();
+    .unwrap();
     return program;
 }
 
@@ -72,22 +74,19 @@ implement_vertex!(Vertex, position);
 struct RenderContext {
     display: Display,
     vertex_buffer: VertexBuffer<Vertex>,
-
     shaders: Program,
     index_buffer: IndexBuffer<u16>,
 }
 
 impl RenderContext {
-    pub fn new( event_loop: &EventLoop<()>) -> Self
-    {
-
+    pub fn new(event_loop: &EventLoop<()>) -> Self {
         let wb = glutin::window::WindowBuilder::new().with_title("Quadtree demo");
         let cb = glutin::ContextBuilder::new().with_vsync(true);
-        let display = glium::Display::new(wb, cb, &event_loop).unwrap();
+        let display = Display::new(wb, cb, &event_loop).unwrap();
         // make a vertex buffer
         // we'll reuse it as we only need to draw one quad multiple times anyway
         let vertex_buffer = {
-            glium::VertexBuffer::new(
+            VertexBuffer::new(
                 &display,
                 &[
                     Vertex {
@@ -104,15 +103,15 @@ impl RenderContext {
                     },
                 ],
             )
-                .unwrap()
+            .unwrap()
         };
         // and the index buffer to form the triangle
-        let index_buffer = glium::IndexBuffer::new(
+        let index_buffer = IndexBuffer::new(
             &display,
             PrimitiveType::TrianglesList,
             &[0 as u16, 1, 2, 1, 2, 3],
         )
-            .unwrap();
+        .unwrap();
 
         let shaders = make_shaders(&display);
         Self {
@@ -124,47 +123,27 @@ impl RenderContext {
     }
 }
 
-
-fn draw(mouse_pos: (f32, f32),
-        tree: &mut Tree<Chunk, QuadVec>,
-        ctx: &RenderContext) {
-
-
-
-    // update the tree
-    // adding chunks to their respective position, and also set them visible when adding
-    fn chunk_creator(position:QuadVec)->Chunk
-    {
-        let R = 6;
-
-        let visible =  match position.depth {
-                  4=> ((position.x as i32 - R).pow(2) + (position.y as i32 - R).pow(2) < R),
-            _=>false,
-        };
-
-        // dbg!(position);
-        //  dbg!(visible);
-         Chunk {
-            visible:true,
-            cache_state: visible as i32,
+fn draw(mouse_pos: (f32, f32), tree: &mut Tree<Chunk, QuadVec>, ctx: &RenderContext) {
+    //function for adding chunks to their respective position, and also set their properties
+    fn chunk_creator(_position: QuadVec) -> Chunk {
+        Chunk {
+            visible: true,
+            cache_state: 0,
             selected: false,
             in_bounds: false,
         }
     }
-    let qv = QuadVec::new(6,6,4);
-    if tree.prepare_update(
-        &[qv],
-        6,
-        chunk_creator,
-    ) {
+
+    let qv = QuadVec::from_float_coords(mouse_pos.0 as f64, (1.0 - mouse_pos.1) as f64, 6);
+    if tree.prepare_update(&[qv], 2, chunk_creator) {
         // position should already have been set, so we can just change the visibility
-         for chunk in tree.iter_chunks_to_activate_mut() {
-             chunk.visible = true;
-        //     chunk.cache_state |= 1;
+        for chunk in tree.iter_chunks_to_activate_mut() {
+            chunk.visible = true;
+            chunk.cache_state |= 1;
         }
 
         for chunk in tree.iter_chunks_to_deactivate_mut() {
-            //chunk.visible = false;
+            chunk.visible = false;
         }
 
         // and make chunks that are cached visible
@@ -178,20 +157,16 @@ fn draw(mouse_pos: (f32, f32),
         // and clean
         tree.complete_update();
     }
-    // dbg!("Searching!");
-    // tree.search_around(qv, 7, | c|{
-    //     c.chunk.cache_state = 4
-    // });
+
     // go over all chunks in the tree and set them to not be selected
     for chunk in tree.iter_chunks_mut() {
         chunk.selected = false;
     }
 
     // and select the chunk at the mouse position
-    // if let Some(chunk) = tree.get_chunk_from_position_mut(qv) {
-    //     chunk.selected = true;
-    //     chunk.visible = true;
-    // }
+    if let Some(chunk) = tree.get_chunk_from_position_mut(qv) {
+        chunk.selected = true;
+    }
 
     // and select a number of chunks in a region when the mouse buttons are selected
 
@@ -205,11 +180,11 @@ fn draw(mouse_pos: (f32, f32),
             // draw it if it's visible
             // here we get the chunk position and size
             let uniforms = uniform! {
-                    offset: [position.get_float_coords().0 as f32, position.get_float_coords().1 as f32],
-                    scale: position.get_size() as f32,
-                    state: chunk.cache_state,
-                    selected: chunk.selected as i32,
-                };
+                offset: [position.get_float_coords().0 as f32, position.get_float_coords().1 as f32],
+                scale: position.get_size() as f32,
+                state: chunk.cache_state,
+                selected: chunk.selected as i32,
+            };
 
             // draw it with glium
             target
@@ -226,11 +201,10 @@ fn draw(mouse_pos: (f32, f32),
     target.finish().unwrap();
 }
 
-
 fn main() {
     // set up the tree
-    let mut tree = Tree::<Chunk, QuadVec>::new(0);
-     // start the glium event loop
+    let mut tree = Tree::<Chunk, QuadVec>::new(32);
+    // start the glium event loop
     let event_loop = glutin::event_loop::EventLoop::new();
     let context = RenderContext::new(&event_loop);
     draw((0.5, 0.5), &mut tree, &context);

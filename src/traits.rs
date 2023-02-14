@@ -66,8 +66,9 @@ pub trait LodVec:
     /// where min is the lowest corner of the box, and max is the highest corner
     /// The implementation for QuadVec is as follows:
     /// ```rust
-    /// # struct Chunk { x: u64, y: u64, depth: u8 }
-    /// # impl Chunk {
+    /// struct Chunk { x: u64, y: u64, depth: u8 }
+    /// impl Chunk {
+    ///    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool{
     /// // get the lowest lod level
     /// let level = self.depth.min(min.depth.min(max.depth));
     ///
@@ -76,7 +77,7 @@ pub trait LodVec:
     /// let min_difference = min.depth - level;
     /// let max_difference = max.depth - level;
     ///
-    //// // get the coords to that level
+    /// // get the coords to that level
     /// let self_x = self.x >> self_difference;
     /// let self_y = self.y >> self_difference;
     ///
@@ -87,12 +88,13 @@ pub trait LodVec:
     /// let max_y = max.y >> max_difference;
     ///
     /// // then check if we are inside the AABB
-    /// self.depth as u64 <= max_depth
+    /// self.depth  <= max_depth
     /// 	&& self_x >= min_x
     /// 	&& self_x < max_x
     /// 	&& self_y >= min_y
     /// 	&& self_y < max_y
-    /// # }
+    /// }
+    /// }
     /// ```
     fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool;
 

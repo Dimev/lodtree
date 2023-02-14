@@ -108,7 +108,6 @@ pub struct Tree<C: Sized, L: LodVec> {
     chunks_to_delete: Vec<ToDeleteContainer<C, L>>,
 }
 
-
 impl<C, L> Tree<C, L>
 where
     C: Sized,
@@ -173,7 +172,7 @@ where
     }
 
     /// create a tree with preallocated memory for chunks and nodes
-    pub fn with_capacity(capacity:usize, cache_size: usize) -> Self {
+    pub fn with_capacity(capacity: usize, cache_size: usize) -> Self {
         // make a new Tree
         // also allocate some room for nodes
         Self {

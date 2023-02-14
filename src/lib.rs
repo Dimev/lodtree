@@ -21,7 +21,7 @@
 //! # use lodtree::*;
 //! # use lodtree::coords::OctVec;
 //! # struct Chunk {}
-//! let mut tree = Tree::<Chunk, OctVec>::new();
+//! let mut tree = Tree::<Chunk, OctVec>::new(64);
 //! ```
 //!
 //! If you want to update chunks due to the camera being moved, you can check if it's needed with prepare_update.
@@ -62,13 +62,13 @@
 //! # impl Chunk {
 //! #     fn expensive_init(&mut self, pos: QuadVec) {}
 //! # }
-//! # let mut tree = Tree::<Chunk, QuadVec>::new();
+//! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
+//!
 //! tree.get_chunks_to_add_slice_mut()
 //! 	.iter_mut() // or par_iter_mut() if you're using rayon
-//! 	.for_each(|(position, chunk)| {
-//!
+//! 	.for_each(|to_add| {
 //! 		// and run expensive init, probably does something with procedural generation
-//! 		chunk.expensive_init(*position);
+//! 		to_add.chunk.expensive_init(to_add.position);
 //! 	});
 //! ```
 //!
@@ -80,7 +80,7 @@
 //! # impl Chunk {
 //! #     fn set_visible(&mut self, v: bool) {}
 //! # }
-//! # let mut tree = Tree::<Chunk, QuadVec>::new();
+//! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //! // and make all chunks visible or not
 //! for chunk in tree.iter_chunks_to_activate_mut() {
 //! 	chunk.set_visible(true);
@@ -99,7 +99,7 @@
 //! # impl Chunk {
 //! #     fn cleanup(&mut self) {}
 //! # }
-//! # let mut tree = Tree::<Chunk, QuadVec>::new();
+//! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //! for chunk in tree.iter_chunks_to_remove_mut() {
 //! 	chunk.cleanup();
 //! }
@@ -110,7 +110,7 @@
 //! # use lodtree::*;
 //! # use lodtree::coords::QuadVec;
 //! # struct Chunk {}
-//! # let mut tree = Tree::<Chunk, QuadVec>::new();
+//! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //! tree.do_update();
 //! ```
 //! But we're not done yet!
@@ -123,10 +123,11 @@
 //! # impl Chunk {
 //! #     fn true_cleanup(&mut self) {}
 //! # }
-//! # let mut tree = Tree::<Chunk, QuadVec>::new();
-//! for (position, chunk) in tree.get_chunks_to_delete_slice_mut().iter_mut() { // there's also an iterator for just chunks here
-//! 	chunk.true_cleanup();
-//! }
+//!
+//!  let mut tree = Tree::<Chunk, QuadVec>::new(64);
+//!  for td in tree.get_chunks_to_delete_slice_mut().iter_mut() { // there's also an iterator for just chunks here
+//!    td.chunk.true_cleanup();
+//!  }
 //!
 //! // and finally, complete the entire update
 //! tree.complete_update();
