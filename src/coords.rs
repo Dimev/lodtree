@@ -1,12 +1,12 @@
 //! Contains coordinate structs, QuadVec for quadtrees, and OctVec for octrees, as well as their LodVec implementation
 
-use std::cmp::Ordering;
 use crate::traits::LodVec;
+use std::cmp::Ordering;
 
 /// A Lod Vector for use in a quadtree.
 /// It subdivides into 4 children of equal size.
 //#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
-#[derive(Copy, Clone, PartialEq, Eq,  Default, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Debug, Hash)]
 pub struct QuadVec {
     /// x position in the quadtree.
     pub x: u64,
@@ -19,23 +19,21 @@ pub struct QuadVec {
     pub depth: u8,
 }
 
-impl PartialOrd for QuadVec{
+impl PartialOrd for QuadVec {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.depth != other.depth
-        {
+        if self.depth != other.depth {
             return None;
         }
-        if (self.x == other.x) && (self.y == other.y){
+        if (self.x == other.x) && (self.y == other.y) {
             return Some(Ordering::Equal);
         }
 
-        if(self.x < other.x) &&(self.y < other.y){
+        if (self.x < other.x) && (self.y < other.y) {
             return Some(Ordering::Less);
-        }
-        else if(self.x > other.x) &&(self.y > other.y){
+        } else if (self.x > other.x) && (self.y > other.y) {
             return Some(Ordering::Greater);
         }
-        return  None;
+        return None;
     }
 }
 
@@ -89,20 +87,6 @@ impl QuadVec {
 
 impl LodVec for QuadVec {
     #[inline]
-    fn num_children() -> usize {
-        4
-    }
-
-    #[inline]
-    fn root() -> Self {
-        Self {
-            x: 0,
-            y: 0,
-            depth: 0,
-        }
-    }
-
-    #[inline]
     fn get_child(self, index: usize) -> Self {
         // the positions, doubled in scale
         let x = self.x << 1;
@@ -117,6 +101,20 @@ impl LodVec for QuadVec {
             x: x + increment_x,
             y: y + increment_y,
             depth: self.depth + 1,
+        }
+    }
+
+    #[inline]
+    fn num_children() -> usize {
+        4
+    }
+
+    #[inline]
+    fn root() -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            depth: 0,
         }
     }
 
@@ -196,7 +194,7 @@ impl LodVec for QuadVec {
 
 /// A Lod Vector for use in an octree.
 /// It subdivides into 8 children of equal size.
-#[derive(Copy, Clone, PartialEq, Eq,  Default, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Debug, Hash)]
 pub struct OctVec {
     /// x position in the octree.
     pub x: u64,
@@ -214,21 +212,19 @@ pub struct OctVec {
 
 impl PartialOrd for OctVec {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.depth != other.depth
-        {
+        if self.depth != other.depth {
             return None;
         }
-        if (self.x == other.x) && (self.y == other.y) && (self.z == other.z){
+        if (self.x == other.x) && (self.y == other.y) && (self.z == other.z) {
             return Some(Ordering::Equal);
         }
 
-        if(self.x < other.x) &&(self.y < other.y)&& (self.z < other.z){
+        if (self.x < other.x) && (self.y < other.y) && (self.z < other.z) {
             return Some(Ordering::Less);
-        }
-        else if(self.x > other.x) &&(self.y > other.y)&& (self.z > other.z){
+        } else if (self.x > other.x) && (self.y > other.y) && (self.z > other.z) {
             return Some(Ordering::Greater);
         }
-        return  None;
+        return None;
     }
 }
 impl OctVec {
@@ -288,21 +284,6 @@ impl OctVec {
 
 impl LodVec for OctVec {
     #[inline]
-    fn num_children() -> usize {
-        8
-    }
-
-    #[inline]
-    fn root() -> Self {
-        Self {
-            x: 0,
-            y: 0,
-            z: 0,
-            depth: 0,
-        }
-    }
-
-    #[inline]
     fn get_child(self, index: usize) -> Self {
         // the positions, doubled in scale
         let x = self.x << 1;
@@ -320,6 +301,21 @@ impl LodVec for OctVec {
             y: y + increment_y,
             z: z + increment_z,
             depth: self.depth + 1,
+        }
+    }
+
+    #[inline]
+    fn num_children() -> usize {
+        8
+    }
+
+    #[inline]
+    fn root() -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            z: 0,
+            depth: 0,
         }
     }
 
@@ -365,6 +361,7 @@ impl LodVec for OctVec {
             && local.2 < max.2
     }
 
+    #[inline]
     fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool {
         // get the lowest lod level
         let level = self.depth.min(min.depth.min(max.depth));
@@ -390,11 +387,11 @@ impl LodVec for OctVec {
         // then check if we are inside the AABB
         self.depth as u8 <= max_depth
             && self_x >= min_x
-            && self_x < max_x
+            && self_x <= max_x
             && self_y >= min_y
-            && self_y < max_y
+            && self_y <= max_y
             && self_z >= min_z
-            && self_z < max_z
+            && self_z <= max_z
     }
 
     #[inline]

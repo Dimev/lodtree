@@ -6,7 +6,6 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::num::NonZeroUsize;
 
-
 // struct for keeping track of chunks
 // keeps track of the parent and child indices
 #[derive(Copy, Clone, Debug, Default)]
@@ -109,65 +108,14 @@ pub struct Tree<C: Sized, L: LodVec> {
     chunks_to_delete: Vec<ToDeleteContainer<C, L>>,
 }
 
-// struct TreeCursor<'a, C, L>{
-//     tree:  &'a Tree< C, L>,
-//     current: L
-// }
-//
-// impl <C, L> Iterator for TreeCursor<C, L>
-// {
-//     type Item = C;
-//
-//     fn next(&mut self) -> Option<Self::Item> {
-//         Some(self.c)
-//     }
-// }
 
 impl<C, L> Tree<C, L>
 where
     C: Sized,
     L: LodVec,
 {
-    pub fn search_around(&mut self, center: L, bounds:u32, mutator: fn(&mut ChunkContainer<C, L> ))
-    where L:Debug
-    {
-
-         let mut node = *self.nodes.get(0).unwrap();
-        let mut position = L::root();
-          // then loop
-        loop {
-
-            // if the current node is the one we are looking for, return
-            if position == center {
-                mutator( self.chunks.get_mut(node.chunk).unwrap());
-            }
-
-            // if the current node does not have children, stop
-			// this works according to clippy
-            if node.children.is_none()
-            {
-                return;
-
-            }
-
-            // if not, go over the node children
-            if let Some((index, found_position)) = (0..L::num_children())
-                .map(|i| (i, position.get_child(i)))
-                .find(|(_, x)| x.contains_child_node(center))
-            {
-                // we found the position to go to
-                position = found_position;
-                dbg!(position);
-                // and the node is at the index of the child nodes + index
-                node = self.nodes[node.children.unwrap().get() + index];
-            } else {
-                // if no child got found that matched the item, return none
-                return;
-            }
-        }
-    }
-
-    // helper function for later, gets a node index from a position
+    /// Gets an index in self.nodes vector from a position.
+    /// If position is not pointing to a node, None is returned.
     fn get_node_index_from_position(&self, position: L) -> Option<usize> {
         // the current node
         let mut current = *self.nodes.get(0)?;
@@ -183,9 +131,8 @@ where
             }
 
             // if the current node does not have children, stop
-			// this works according to clippy
+            // this works according to clippy
             current.children?;
-            
 
             // if not, go over the node children
             if let Some((index, found_position)) = (0..L::num_children())
@@ -204,22 +151,41 @@ where
         }
     }
 
-
-
-    /// create a new, empty tree
+    /// create a new, empty tree, with a cache of given size
     pub fn new(cache_size: usize) -> Self {
         // make a new Tree
         // also allocate some room for nodes
         Self {
-            chunks_to_add_parent: Vec::with_capacity(512),
-            chunks_to_add: Vec::with_capacity(512),
-            chunks_to_remove: Vec::with_capacity(512),
-            chunks_to_activate: Vec::with_capacity(512),
-            chunks_to_deactivate: Vec::with_capacity(512),
-            chunks: Vec::with_capacity(512),
-            nodes: Vec::with_capacity(512),
-            free_list: VecDeque::with_capacity(512),
-            processing_queue: Vec::with_capacity(512),
+            chunks_to_add_parent: Vec::new(),
+            chunks_to_add: Vec::new(),
+            chunks_to_remove: Vec::new(),
+            chunks_to_activate: Vec::new(),
+            chunks_to_deactivate: Vec::new(),
+            chunks: Vec::new(),
+            nodes: Vec::new(),
+            free_list: VecDeque::new(),
+            processing_queue: Vec::new(),
+            cache_size,
+            chunk_cache: HashMap::with_capacity(cache_size),
+            cache_queue: VecDeque::with_capacity(cache_size),
+            chunks_to_delete: Vec::with_capacity(cache_size),
+        }
+    }
+
+    /// create a tree with preallocated memory for chunks and nodes
+    pub fn with_capacity(capacity:usize, cache_size: usize) -> Self {
+        // make a new Tree
+        // also allocate some room for nodes
+        Self {
+            chunks_to_add_parent: Vec::with_capacity(capacity),
+            chunks_to_add: Vec::with_capacity(capacity),
+            chunks_to_remove: Vec::with_capacity(capacity),
+            chunks_to_activate: Vec::with_capacity(capacity),
+            chunks_to_deactivate: Vec::with_capacity(capacity),
+            chunks: Vec::with_capacity(capacity),
+            nodes: Vec::with_capacity(capacity),
+            free_list: VecDeque::with_capacity(capacity),
+            processing_queue: Vec::with_capacity(capacity),
             cache_size,
             chunk_cache: HashMap::with_capacity(cache_size),
             cache_queue: VecDeque::with_capacity(cache_size),
