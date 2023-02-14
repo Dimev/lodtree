@@ -5,7 +5,7 @@ use crate::traits::*;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::num::NonZeroUsize;
-use crate::coords::QuadVec;
+
 
 // struct for keeping track of chunks
 // keeps track of the parent and child indices

@@ -16,3 +16,5 @@ categories = ["data-structures"]
 [dev_dependencies]
 rayon = "1.5"
 glium = "0.30"
+rand ="0.8.5"
+rand_derive = "0.5.0"

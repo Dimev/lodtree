@@ -1,10 +1,12 @@
 //! Contains coordinate structs, QuadVec for quadtrees, and OctVec for octrees, as well as their LodVec implementation
 
+use std::cmp::Ordering;
 use crate::traits::LodVec;
 
 /// A Lod Vector for use in a quadtree.
 /// It subdivides into 4 children of equal size.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
+//#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq,  Default, Debug, Hash)]
 pub struct QuadVec {
     /// x position in the quadtree.
     pub x: u64,
@@ -15,6 +17,26 @@ pub struct QuadVec {
     /// lod depth in the quadtree.
     /// this is limited, hence we use u8.
     pub depth: u8,
+}
+
+impl PartialOrd for QuadVec{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.depth != other.depth
+        {
+            return None;
+        }
+        if (self.x == other.x) && (self.y == other.y){
+            return Some(Ordering::Equal);
+        }
+
+        if(self.x < other.x) &&(self.y < other.y){
+            return Some(Ordering::Less);
+        }
+        else if(self.x > other.x) &&(self.y > other.y){
+            return Some(Ordering::Greater);
+        }
+        return  None;
+    }
 }
 
 impl QuadVec {
@@ -131,7 +153,7 @@ impl LodVec for QuadVec {
         local.0 >= min.0 && local.0 < max.0 && local.1 >= min.1 && local.1 < max.1
     }
 
-    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool {
         // get the lowest lod level
         let level = self.depth.min(min.depth.min(max.depth));
 
@@ -151,11 +173,11 @@ impl LodVec for QuadVec {
         let max_y = max.y >> max_difference;
 
         // then check if we are inside the AABB
-        self.depth as u64 <= max_depth
+        self.depth as u8 <= max_depth
             && self_x >= min_x
-            && self_x < max_x
+            && self_x <= max_x
             && self_y >= min_y
-            && self_y < max_y
+            && self_y <= max_y
     }
 
     #[inline]
@@ -174,7 +196,7 @@ impl LodVec for QuadVec {
 
 /// A Lod Vector for use in an octree.
 /// It subdivides into 8 children of equal size.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq,  Default, Debug, Hash)]
 pub struct OctVec {
     /// x position in the octree.
     pub x: u64,
@@ -190,6 +212,25 @@ pub struct OctVec {
     pub depth: u8,
 }
 
+impl PartialOrd for OctVec {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.depth != other.depth
+        {
+            return None;
+        }
+        if (self.x == other.x) && (self.y == other.y) && (self.z == other.z){
+            return Some(Ordering::Equal);
+        }
+
+        if(self.x < other.x) &&(self.y < other.y)&& (self.z < other.z){
+            return Some(Ordering::Less);
+        }
+        else if(self.x > other.x) &&(self.y > other.y)&& (self.z > other.z){
+            return Some(Ordering::Greater);
+        }
+        return  None;
+    }
+}
 impl OctVec {
     /// creates a new vector from the raw x and y coords.
     /// # Args
@@ -324,7 +365,7 @@ impl LodVec for OctVec {
             && local.2 < max.2
     }
 
-    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool {
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool {
         // get the lowest lod level
         let level = self.depth.min(min.depth.min(max.depth));
 
@@ -347,7 +388,7 @@ impl LodVec for OctVec {
         let max_z = max.z >> max_difference;
 
         // then check if we are inside the AABB
-        self.depth as u64 <= max_depth
+        self.depth as u8 <= max_depth
             && self_x >= min_x
             && self_x < max_x
             && self_y >= min_y

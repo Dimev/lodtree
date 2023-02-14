@@ -1,4 +1,6 @@
 use std::f32::consts::PI;
+use std::thread::sleep;
+use std::time::Duration;
 use glium::index::PrimitiveType;
 use glium::{glutin, implement_vertex, program, uniform, Surface, Program, Display, VertexBuffer, IndexBuffer};
 use glium::glutin::event_loop::EventLoop;
@@ -159,12 +161,12 @@ fn draw(mouse_pos: (f32, f32),
     ) {
         // position should already have been set, so we can just change the visibility
          for chunk in tree.iter_chunks_to_activate_mut() {
-             chunk.visible = true;
+             chunk.visible = false;
         //     chunk.cache_state |= 1;
         }
 
         for chunk in tree.iter_chunks_to_deactivate_mut() {
-            //chunk.visible = false;
+            chunk.visible = false;
         }
 
         // and make chunks that are cached visible
@@ -182,6 +184,29 @@ fn draw(mouse_pos: (f32, f32),
     tree.search_around(qv, 7, | c|{
         c.chunk.cache_state = 4
     });
+    let min = QuadVec::new(0, 0, 4);
+    let max = QuadVec::new(2, 2, 4);
+    let mut count = 0;
+
+    for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, 4){
+
+        //sleep(Duration::from_secs_f32(0.1));
+
+        if !i.0.contains_child_node(QuadVec::new(i.0.x<<1, i.0.y<<1, 4))&&i.1.visible {
+
+            println!(" YES CHUNK x: {:?} y: {:?}, on depth: {:?}", i.0.x, i.0.y, i.0.depth);
+            count += 1;
+        }
+
+        else{println!(" NO CHUNK  x: {:?} y: {:?}, on depth: {:?}", i.0.x, i.0.y, i.0.depth);
+        count += 1;}
+        println!("{:?}", count);
+    }
+
+
+
+
+
     // go over all chunks in the tree and set them to not be selected
     for chunk in tree.iter_chunks_mut() {
         chunk.selected = false;

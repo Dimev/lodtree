@@ -1,4 +1,8 @@
 //! Iterators over chunks
+use std::ops::Range;
+use rand::distributions::uniform::SampleUniform;
+use rand::Rng;
+
 
 use crate::traits::*;
 use crate::tree::*;
@@ -407,7 +411,7 @@ pub struct ChunksInBoundIter<L: LodVec> {
     stack: Vec<L>,
 
     // and maximum depth to go to
-    max_depth: u64,
+    max_depth: u8,
 
     // and the min of the bound
     bound_min: L,
@@ -445,7 +449,7 @@ pub struct ChunksInBoundAndMaybeTreeIter<'a, C: Sized, L: LodVec> {
     stack: Vec<(L, Option<TreeNode>)>,
 
     // and maximum depth to go to
-    max_depth: u64,
+    max_depth: u8,
 
     // and the min of the bound
     bound_min: L,
@@ -506,7 +510,7 @@ pub struct ChunksInBoundAndTreeIter<'a, C: Sized, L: LodVec> {
     stack: Vec<(L, TreeNode)>,
 
     // and maximum depth to go to
-    max_depth: u64,
+    max_depth: u8,
 
     // and the min of the bound
     bound_min: L,
@@ -553,7 +557,7 @@ pub struct ChunksInBoundAndMaybeTreeIterMut<'a, C: Sized, L: LodVec> {
     stack: Vec<(L, Option<TreeNode>)>,
 
     // and maximum depth to go to
-    max_depth: u64,
+    max_depth: u8,
 
     // and the min of the bound
     bound_min: L,
@@ -615,7 +619,7 @@ pub struct ChunksInBoundAndTreeIterMut<'a, C: Sized, L: LodVec> {
     stack: Vec<(L, TreeNode)>,
 
     // and maximum depth to go to
-    max_depth: u64,
+    max_depth: u8,
 
     // and the min of the bound
     bound_min: L,
@@ -669,8 +673,9 @@ where
     pub fn iter_all_chunks_in_bounds(
         bound_min: L,
         bound_max: L,
-        max_depth: u64,
+        max_depth: u8,
     ) -> ChunksInBoundIter<L> {
+        debug_assert!(bound_min<bound_max, "Bounds must select a non-empty area/volume");
         ChunksInBoundIter {
             stack: vec![L::root()],
             max_depth,
@@ -685,7 +690,7 @@ where
         &'a self,
         bound_min: L,
         bound_max: L,
-        max_depth: u64,
+        max_depth: u8,
     ) -> ChunksInBoundAndMaybeTreeIter<C, L> {
         ChunksInBoundAndMaybeTreeIter {
             stack: vec![(L::root(), self.nodes.first().copied())],
@@ -703,7 +708,7 @@ where
         &'a self,
         bound_min: L,
         bound_max: L,
-        max_depth: u64,
+        max_depth: u8,
     ) -> ChunksInBoundAndTreeIter<C, L> {
         // get the stack, empty if we can't get the first node
         let stack = if let Some(node) = self.nodes.first() {
@@ -727,7 +732,7 @@ where
         &'a mut self,
         bound_min: L,
         bound_max: L,
-        max_depth: u64,
+        max_depth: u8,
     ) -> ChunksInBoundAndMaybeTreeIterMut<C, L> {
         ChunksInBoundAndMaybeTreeIterMut {
             stack: vec![(L::root(), self.nodes.first().copied())],
@@ -745,7 +750,7 @@ where
         &'a mut self,
         bound_min: L,
         bound_max: L,
-        max_depth: u64,
+        max_depth: u8,
     ) -> ChunksInBoundAndTreeIterMut<C, L> {
         // get the stack, empty if we can't get the first node
         let stack = if let Some(node) = self.nodes.first() {
@@ -753,7 +758,6 @@ where
         } else {
             vec![]
         };
-
         ChunksInBoundAndTreeIterMut {
             stack,
             tree: self,
@@ -762,26 +766,203 @@ where
             bound_max,
         }
     }
+
 }
 
 #[cfg(test)]
 mod tests {
+    use std::cmp::Ordering;
+
 
     use super::*;
     use crate::coords::*;
 
-	// TODO: also test the other iters
+pub trait SafeRngRange{
+    fn safe_uniform<T>(&mut self, range:Range<T>)->T
+    where
+        T: SampleUniform + PartialOrd;
+}
+
+impl SafeRngRange for rand::rngs::ThreadRng{
+    //#[no_panic]
+    fn safe_uniform<T>(&mut self, range:Range<T>)->T
+    where
+        T: SampleUniform + PartialOrd
+    {
+        if range.is_empty(){
+           range.start
+        }
+        else {
+            self.gen_range(range)
+        }
+    }
+}
+    // TODO: also test the other iters
+    fn get_chunk_count_at_max_depth(a:QuadVec, b:QuadVec) -> u64
+    {
+        assert_eq!(a.depth, b.depth);
+        (( b.x- a.x )+1)*(( b.y- a.y )+1)
+    }
 
     #[test]
     fn test_bounds() {
-        struct C;
+        const D:u8 = 4;
 
-        for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(
-            QuadVec::new(1, 1, 4),
-            QuadVec::new(8, 8, 4),
-            4,
+        let mut rng = rand::thread_rng();
+
+        for i in 1..100 {
+            let cmax = 1<<D;
+             let min = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
+             let max = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
+             //println!("Generated min  {:?}", min);
+            //println!("Generated max {:?}", max);
+            let cmp = min.partial_cmp(&max);
+            if cmp.is_none() {
+              // println!("Can not compare {min:?} and {max:?}");
+                continue;
+            }
+            let (min, max) = match cmp.unwrap() {
+                Ordering::Greater => {
+                    (max, min)
+                },
+                Ordering::Less => {
+                    (min, max)
+                },
+                Ordering::Equal => {
+                    continue;
+                }
+            };
+            struct C;
+            let mut count = 0;
+            for pos in Tree::<C, QuadVec>::iter_all_chunks_in_bounds(min, max, D) {
+               // println!("{:?}", pos);
+
+                if pos.depth == 4 {
+                    count += 1;
+                }
+            }
+            assert_eq!(count, get_chunk_count_at_max_depth(min, max));
+        }
+    }
+
+    fn get_chunk_count_at_max_depth_oct(b:OctVec,a:OctVec)-> u64{
+        assert_eq!(a.depth, b.depth);
+        (( b.x- a.x )+1)*(( b.y- a.y )+1)*((b.z - a.z)+1)
+
+    }
+    ///The same unit test as test_bounds juts for OctVec:
+    /// //todo check it once again
+    #[test]
+    fn test_bounds_octree() {
+
+        const D:u8 = 4;
+
+        let mut rng = rand::thread_rng();
+
+        for i in 1..100 {
+            let cmax = 1<<D;
+             let min = OctVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax),rng.safe_uniform(0..cmax), D );
+             let max = OctVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax),rng.safe_uniform(0..cmax),D );
+
+             println!("Generated min  {:?}", min);
+            println!("Generated max {:?}", max);
+            let cmp = min.partial_cmp(&max);
+            if cmp.is_none() {
+               println!("Can not compare {min:?} and {max:?}");
+                continue;
+            }
+            let (min, max) = match cmp.unwrap() {
+                Ordering::Greater => {
+                    (max, min)
+                },
+                Ordering::Less => {
+                    (min, max)
+                },
+                Ordering::Equal => {
+                    continue;
+                }
+            };
+            struct C;
+            let mut count = 0;
+            for pos in Tree::<C, OctVec>::iter_all_chunks_in_bounds(min, max, D) {
+               // println!("{:?}", pos);
+
+                if pos.depth == 4 {
+                    count += 1;
+                }
+            }
+            assert_eq!(count, get_chunk_count_at_max_depth_oct(min, max));
+        }
+    }
+
+
+    #[test]
+    fn test_iter_all_chunks_in_bounds_and_tree_mut() {
+       struct Chunk {
+    visible: bool,
+    cache_state: i32,
+    // 0 is new, 1 is merged, 2 is cached, 3 is both
+    selected: bool,
+    in_bounds: bool,
+}
+
+        fn chunk_creator( position: QuadVec) -> Chunk
+        {
+            let r = 6;
+
+            let visible = match position.depth {
+                4 => (position.x as i32 - r).pow(2) + (position.y as i32 - r).pow(2) < r,
+                _ => false,
+            };
+            // dbg!(position);
+            //  dbg!(visible);
+            Chunk {
+                visible: true,
+                cache_state: visible as i32,
+                selected: false,
+                in_bounds: false,
+            }
+
+
+        }
+        let mut tree = Tree::new(65);
+        let qv = QuadVec::new(6, 6, 4);
+        if tree.prepare_update(
+            &[qv],
+            6,
+            chunk_creator,
         ) {
-            println!("{:?}", pos);
+            // position should already have been set, so we can just change the visibility
+            for chunk in tree.iter_chunks_to_activate_mut() {
+                chunk.visible = true;
+                //     chunk.cache_state |= 1;
+            }
+
+            for chunk in tree.iter_chunks_to_deactivate_mut() {
+                chunk.visible = false;
+            }
+
+            // and make chunks that are cached visible
+            for chunk in tree.iter_chunks_to_remove_mut() {
+                chunk.cache_state = 2;
+            }
+
+            // do the update
+            tree.do_update();
+
+            // and clean
+            tree.complete_update();
+        }
+
+        let min = QuadVec::new(0, 0, 4);
+        let max = QuadVec::new(8, 8, 4);
+        let mut count = 0;
+
+        for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, 4) {
+            if i.0.contains_child_node(QuadVec::new(i.0.x<<1, i.0.y<<1, 4)) {
+                i.1.visible = true;
+                println!("cords:{:?}", i.0.get_float_coords())
+            }
         }
     }
 }
