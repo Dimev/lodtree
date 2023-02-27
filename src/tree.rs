@@ -66,7 +66,7 @@ struct QueueContainer<L: LodVec> {
 // partially based on: https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
 // assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes.
 #[derive(Clone, Debug)]
-pub struct Tree<C: Sized, L: LodVec> {
+pub struct Tree<C: Sized, L: LodVec, B=usize> {
     /// All chunks in the tree
     pub(crate) chunks: Vec<ChunkContainer<C, L>>,
 
@@ -74,7 +74,7 @@ pub struct Tree<C: Sized, L: LodVec> {
     pub(crate) nodes: Vec<TreeNode>,
 
     /// list of free nodes in the Tree, to allocate new nodes into
-    free_list: VecDeque<usize>,
+    free_list: VecDeque<B>,
 
     /// parent chunk indices of the chunks to be added.
     /// tuple of the parent index and the position.
@@ -150,7 +150,8 @@ where
         }
     }
 
-    /// create a new, empty tree, with a cache of given size
+    /// Create a new, empty tree, with a cache of given size
+    ///  Set cache to zero to disable it entirely (may speed up certain workloads by ~50%)
     pub fn new(cache_size: usize) -> Self {
         // make a new Tree
         // also allocate some room for nodes
@@ -172,6 +173,7 @@ where
     }
 
     /// create a tree with preallocated memory for chunks and nodes
+    ///  Set cache to zero to disable it entirely (may speed up certain workloads by ~50%)
     pub fn with_capacity(capacity: usize, cache_size: usize) -> Self {
         // make a new Tree
         // also allocate some room for nodes
@@ -429,7 +431,7 @@ where
     // if so, queue children for removal, and self for activation (child indices, chunk pointer)
     // if we can subdivide, and have no children, queue children for addition, and self for removal (child positions, chunk pointer)
     // if none of the above and have children, queue children for processing
-    // processing queue is only the node positon and node index
+    // processing queue is only the node position and node index
 
     // when removing nodes, do so in groups of num children, and use the free list
     // clear the free list once we only have one chunk (the root) active
@@ -441,7 +443,7 @@ where
     /// * `targets` The target positions to generate the lod around (QuadVec and OctVec define the center position and max lod in depth for this)
     /// * `detail` The detail for these targets (QuadVec and OctVec define this as amount of chunks around this point)
     /// * `chunk_creator` function to create a new chunk from a given position
-    /// returns wether any update is needed.
+    /// returns whether any update is needed.
     pub fn prepare_update(
         &mut self,
         targets: &[L],
@@ -622,21 +624,20 @@ where
                                 break;
                             }
                         }
+                        if self.cache_size >0 {
+                            // then assign this chunk into the cache
+                            if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
+                            {
+                                // there might have been another cached chunk
+                                self.chunks_to_delete.push(ToDeleteContainer {
+                                    position: old_chunk.position,
+                                    chunk: cached_chunk,
+                                });
+                            }
 
-                        // then assign this chunk into the cache
-                        if let Some(cached_chunk) =
-                            self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
-                        {
-                            // there might have been another cached chunk
-                            self.chunks_to_delete.push(ToDeleteContainer {
-                                position: old_chunk.position,
-                                chunk: cached_chunk,
-                            });
+                            // and make sure it's tracked
+                            self.cache_queue.push_back(old_chunk.position);
                         }
-
-                        // and make sure it's tracked
-                        self.cache_queue.push_back(old_chunk.position);
-
                         x
                     }
                     // This can't be reached due to us *always* adding a chunk to the free list before popping it
@@ -674,20 +675,20 @@ where
                         break;
                     }
                 }
-
-                // then assign this chunk into the cache
-                if let Some(cached_chunk) =
-                    self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
-                {
-                    // there might have been another cached chunk
-                    self.chunks_to_delete.push(ToDeleteContainer {
-                        position: old_chunk.position,
-                        chunk: cached_chunk,
-                    });
+                if self.cache_size > 0 {
+                    //then assign this chunk into the cache
+                    if let Some(cached_chunk) =
+                        self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
+                    {
+                        // there might have been another cached chunk
+                        self.chunks_to_delete.push(ToDeleteContainer {
+                            position: old_chunk.position,
+                            chunk: cached_chunk,
+                        });
+                    }
+                    // and make sure it's tracked
+                    self.cache_queue.push_back(old_chunk.position);
                 }
-
-                // and make sure it's tracked
-                self.cache_queue.push_back(old_chunk.position);
             }
 
             // and properly set the chunk pointer of the node of the chunk we just moved, if any
@@ -813,11 +814,13 @@ where
     // gets a chunk from the cache, otehrwise generates one from the given function
     #[inline]
     fn get_chunk_from_cache(&mut self, position: L, chunk_creator: fn(L) -> C) -> C {
-        if let Some(chunk) = self.chunk_cache.remove(&position) {
-            chunk
-        } else {
-            chunk_creator(position)
-        }
+         if self.cache_size >0 {
+             if let Some(chunk) = self.chunk_cache.remove(&position)
+             {
+                 return chunk;
+             }
+         }
+        return chunk_creator(position);
     }
 }
 

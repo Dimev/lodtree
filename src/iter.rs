@@ -770,46 +770,28 @@ where
 mod tests {
     use super::*;
     use crate::coords::*;
-    use rand::distributions::uniform::SampleUniform;
-    use rand::Rng;
+    use rand::rngs::SmallRng;
+    use rand::{Rng, SeedableRng};
     use std::cmp::Ordering;
-    use std::ops::Range;
 
-    pub trait SafeRngRange {
-        fn safe_uniform<T>(&mut self, range: Range<T>) -> T
-        where
-            T: SampleUniform + PartialOrd;
-    }
+    const NUM_QUERIES: usize = 100;
 
-    impl SafeRngRange for rand::rngs::ThreadRng {
-        //#[no_panic]
-        fn safe_uniform<T>(&mut self, range: Range<T>) -> T
-        where
-            T: SampleUniform + PartialOrd,
-        {
-            if range.is_empty() {
-                range.start
-            } else {
-                self.gen_range(range)
-            }
-        }
-    }
-    // TODO: also test the other iters
-    fn get_chunk_count_at_max_depth(a: QuadVec, b: QuadVec) -> u64 {
+    fn get_chunk_count_at_max_depth_quad(a: QuadVec, b: QuadVec) -> u64 {
         assert_eq!(a.depth, b.depth);
         ((b.x - a.x) + 1) * ((b.y - a.y) + 1)
     }
 
     #[test]
+    ///Tests generation of coordinates in bounds over QuadTree
     fn test_bounds_quadtree() {
         const D: u8 = 4;
 
         let mut rng = rand::thread_rng();
 
-        for _i in 1..100 {
+        for _i in 1..NUM_QUERIES {
             let cmax = 1 << D;
-            let min = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
-            let max = QuadVec::new(rng.safe_uniform(0..cmax), rng.safe_uniform(0..cmax), D);
+            let min = QuadVec::new(rng.gen_range(0..cmax), rng.gen_range(0..cmax), D);
+            let max = QuadVec::new(rng.gen_range(0..cmax), rng.gen_range(0..cmax), D);
             //println!("Generated min  {:?}", min);
             //println!("Generated max {:?}", max);
             let cmp = min.partial_cmp(&max);
@@ -833,7 +815,7 @@ mod tests {
                     count += 1;
                 }
             }
-            assert_eq!(count, get_chunk_count_at_max_depth(min, max));
+            assert_eq!(count, get_chunk_count_at_max_depth_quad(min, max));
         }
     }
 
@@ -841,8 +823,8 @@ mod tests {
         assert_eq!(a.depth, b.depth);
         ((b.x - a.x) + 1) * ((b.y - a.y) + 1) * ((b.z - a.z) + 1)
     }
-    ///The same unit test as test_bounds juts for OctVec:
-    /// //todo check it once again
+
+    ///Tests generation of coordinates in bounds over OctTree
     #[test]
     fn test_bounds_octree() {
         const D: u8 = 4;
@@ -852,15 +834,15 @@ mod tests {
         for _i in 1..100 {
             let cmax = 1 << D;
             let min = OctVec::new(
-                rng.safe_uniform(0..cmax),
-                rng.safe_uniform(0..cmax),
-                rng.safe_uniform(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
                 D,
             );
             let max = OctVec::new(
-                rng.safe_uniform(0..cmax),
-                rng.safe_uniform(0..cmax),
-                rng.safe_uniform(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
                 D,
             );
 
@@ -892,67 +874,80 @@ mod tests {
     }
 
     #[test]
-    fn test_iter_all_chunks_in_bounds_and_tree_mut() {
+    fn test_readonly_iterator_over_chunks_oct() {
         struct Chunk {
             visible: bool,
-            cache_state: i32,
-            // 0 is new, 1 is merged, 2 is cached, 3 is both
-            // selected: bool,
-            // in_bounds: bool,
         }
+        const D: u8 = 4;
+        const R: u64 = 3;
 
-        fn chunk_creator(position: QuadVec) -> Chunk {
-            let r = 6;
+        fn chunk_creator(position: OctVec) -> Chunk {
+            let r = (R * R) as i32 - 2;
 
             let visible = match position.depth {
-                4 => (position.x as i32 - r).pow(2) + (position.y as i32 - r).pow(2) < r,
+                D => {
+                    (position.x as i32 - r).pow(2)
+                        + (position.y as i32 - r).pow(2)
+                        + (position.z as i32 - r).pow(2)
+                        < r
+                }
                 _ => false,
             };
-            // dbg!(position);
-            //  dbg!(visible);
-            Chunk {
-                visible: true,
-                cache_state: visible as i32,
-                // selected: false,
-                // in_bounds: false,
-            }
+            //println!("create {:?} {:?}", position, visible);
+            Chunk { visible }
         }
+
         let mut tree = Tree::new(65);
-        let qv = QuadVec::new(6, 6, 4);
-        if tree.prepare_update(&[qv], 6, chunk_creator) {
-            // position should already have been set, so we can just change the visibility
-            for chunk in tree.iter_chunks_to_activate_mut() {
-                chunk.visible = true;
-                //     chunk.cache_state |= 1;
-            }
-
-            for chunk in tree.iter_chunks_to_deactivate_mut() {
-                chunk.visible = false;
-            }
-
-            // and make chunks that are cached visible
-            for chunk in tree.iter_chunks_to_remove_mut() {
-                chunk.cache_state = 2;
-            }
-
+        let qv = OctVec::new(R, R, R, D);
+        while tree.prepare_update(&[qv], R, chunk_creator) {
             // do the update
             tree.do_update();
-
             // and clean
             tree.complete_update();
         }
 
-        let min = QuadVec::new(0, 0, 4);
-        let max = QuadVec::new(8, 8, 4);
-        let mut _count = 0;
+        for i in &tree.chunks {}
 
-        for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, 4) {
-            if i.0
-                .contains_child_node(QuadVec::new(i.0.x << 1, i.0.y << 1, 4))
-            {
-                i.1.visible = true;
-                println!("cords:{:?}", i.0.get_float_coords())
+        let mut rng = SmallRng::seed_from_u64(42);
+        let mut _rng = rand::thread_rng();
+
+        for ite in 1..NUM_QUERIES {
+            let cmax = 1 << D;
+            let min = OctVec::new(
+                _rng.gen_range(0..cmax),
+                _rng.gen_range(0..cmax),
+                _rng.gen_range(0..cmax),
+                D,
+            );
+            let max = OctVec::new(
+                _rng.gen_range(0..cmax),
+                _rng.gen_range(0..cmax),
+                _rng.gen_range(0..cmax),
+                D,
+            );
+            let cmp = min.partial_cmp(&max);
+            if cmp.is_none() {
+                //println!("Can not compare {min:?} and {max:?}");
+                continue;
             }
+            let (min, max) = match cmp.unwrap() {
+                Ordering::Greater => (max, min),
+                Ordering::Less => (min, max),
+                Ordering::Equal => {
+                    continue;
+                }
+            };
+            let mut filled_voxels: u32 = 0;
+            //println!("{:?}  {:?} {:?}", ite, min, max);
+            for i in tree.iter_all_chunks_in_bounds_and_tree(min, max, D) {
+                if i.1.visible {
+                    println!(" Sphere chunk {:?}", i.0);
+                    filled_voxels += 1;
+                }
+            }
+            println!("  filled {:?}", filled_voxels);
         }
     }
+
+
 }

@@ -145,7 +145,7 @@ fn draw(mouse_pos: (f32, f32), tree: &mut Tree<Chunk, QuadVec>, ctx: &RenderCont
         for chunk in tree.iter_chunks_to_deactivate_mut() {
             chunk.visible = false;
         }
-
+        tree.get_chunk_to_delete()
         // and make chunks that are cached visible
         for chunk in tree.iter_chunks_to_remove_mut() {
             chunk.cache_state = 2;

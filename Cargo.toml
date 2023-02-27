@@ -16,5 +16,10 @@ categories = ["data-structures"]
 [dev_dependencies]
 rayon = "1.5"
 glium = "0.30"
-rand ="0.8.5"
+rand ={version="0.8.5", features=['small_rng']}
 rand_derive = "0.5.0"
+criterion = "0.3"
+
+[[bench]]
+name = "iterators"
+harness = false
