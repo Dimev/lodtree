@@ -899,7 +899,7 @@ mod tests {
 
         let mut tree = Tree::new(65);
         let qv = OctVec::new(R, R, R, D);
-        while tree.prepare_update(&[qv], R, chunk_creator) {
+        while tree.prepare_update(&[qv], R, &chunk_creator) {
             // do the update
             tree.do_update();
             // and clean
