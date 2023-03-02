@@ -44,7 +44,7 @@ fn main() {
         if tree.prepare_update(
             &[OctVec::new(4096, 4096, 4096, 32)], // target position in the tree
             2,                                    // the amount of detail
-            |position_in_tree| Chunk::new(position_in_tree), // and how we should make a new tree inside the function here. This should be done quickly
+            &|position_in_tree| Chunk::new(position_in_tree), // and how we should make a new tree inside the function here. This should be done quickly
         ) {
             let duration = start_time.elapsed().as_micros();
 

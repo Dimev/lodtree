@@ -45,9 +45,9 @@
 //! # struct Chunk {}
 //! # let mut tree = Tree::<Chunk, OctVec>::new(64);
 //! let needs_updating = tree.prepare_update(
-//! 	&[OctVec::new(8, 8, 8, 8)], // the target positions to generate the lod around
-//! 	4, // amount of detail
-//! 	|pos| Chunk {} // and the function to construct the chunk with
+//!     &[OctVec::new(8, 8, 8, 8)], // the target positions to generate the lod around
+//!     4, // amount of detail
+//!     |pos| Chunk {} // and the function to construct the chunk with
 //!                    // NOTE: this is only called for completely new chunks, not the ones loaded from the chunk cache!
 //! );
 //! ```
@@ -65,11 +65,11 @@
 //! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //!
 //! tree.get_chunks_to_add_slice_mut()
-//! 	.iter_mut() // or par_iter_mut() if you're using rayon
-//! 	.for_each(|to_add| {
-//! 		// and run expensive init, probably does something with procedural generation
-//! 		to_add.chunk.expensive_init(to_add.position);
-//! 	});
+//!     .iter_mut() // or par_iter_mut() if you're using rayon
+//!     .for_each(|to_add| {
+//!         // and run expensive init, probably does something with procedural generation
+//!         to_add.chunk.expensive_init(to_add.position);
+//!     });
 //! ```
 //!
 //! Next, we'll also want to change the visibility of some chunks so they don't overlap with higher detail lods.
@@ -83,11 +83,11 @@
 //! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //! // and make all chunks visible or not
 //! for chunk in tree.iter_chunks_to_activate_mut() {
-//! 	chunk.set_visible(true);
+//!     chunk.set_visible(true);
 //! }
 //!
 //! for chunk in tree.iter_chunks_to_deactivate_mut() {
-//! 	chunk.set_visible(false);
+//!     chunk.set_visible(false);
 //! }
 //! ```
 //! We'll probably also want to do some cleanup with chunks that are removed.
@@ -101,7 +101,7 @@
 //! # }
 //! # let mut tree = Tree::<Chunk, QuadVec>::new(64);
 //! for chunk in tree.iter_chunks_to_remove_mut() {
-//! 	chunk.cleanup();
+//!     chunk.cleanup();
 //! }
 //! ```
 //! And finally, actually update the tree with the new chunks.

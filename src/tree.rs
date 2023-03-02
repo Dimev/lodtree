@@ -66,7 +66,7 @@ struct QueueContainer<L: LodVec> {
 // partially based on: https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
 // assumption here is that because of the fact that we need to keep inactive chunks in memory for later use, we can keep them together with the actual nodes.
 #[derive(Clone, Debug)]
-pub struct Tree<C: Sized, L: LodVec, B=usize> {
+pub struct Tree<C: Sized, L: LodVec, B = usize> {
     /// All chunks in the tree
     pub(crate) chunks: Vec<ChunkContainer<C, L>>,
 
@@ -80,16 +80,16 @@ pub struct Tree<C: Sized, L: LodVec, B=usize> {
     /// tuple of the parent index and the position.
     chunks_to_add_parent: Vec<usize>,
 
-    /// actual chunk to add
+    /// actual chunks to add during next update
     chunks_to_add: Vec<ToAddContainer<C, L>>,
 
     /// chunk indices to be removed, tuple of index, parent index
     chunks_to_remove: Vec<ToRemoveContainer>,
 
-    /// indices of the chunks that need to be activated
+    /// indices of the chunks that need to be activated (i.e. the chunks that have just lost children)
     chunks_to_activate: Vec<usize>,
 
-    /// indices of the chunks that need to be deactivated
+    /// indices of the chunks that need to be deactivated (i.e. chunks that have been subdivided in this iteration)
     chunks_to_deactivate: Vec<usize>,
 
     /// internal queue for processing, that way we won't need to reallocate it
@@ -424,6 +424,98 @@ where
         &mut self.chunks_to_delete[..]
     }
 
+    /// Adds chunks at and around specified locations.
+    /// This opertion will also add chunks at other locations around the target to fullfill the
+    /// datastructure constraints (such that no partially filled nodes exist).
+    pub fn prepare_insert(
+        &mut self,
+        targets: &[L],
+        detail: u64,
+        chunk_creator: &dyn Fn(L) -> C,
+    ) -> bool {
+        // first, clear the previous arrays
+        self.chunks_to_add.clear();
+        self.chunks_to_remove.clear();
+        self.chunks_to_activate.clear();
+        self.chunks_to_deactivate.clear();
+
+        // if we don't have a root, make one pending for creation
+        if self.nodes.is_empty() {
+            // chunk to add
+            let chunk_to_add = self.get_chunk_from_cache(L::root(), chunk_creator);
+
+            // we need to add the root as pending
+            self.chunks_to_add.push(ToAddContainer {
+                position: L::root(),
+                chunk: chunk_to_add,
+            });
+
+            // and the parent
+            self.chunks_to_add_parent.push(0);
+
+            // and an update is needed
+            return true;
+        }
+
+        // clear the processing queue from any previous updates
+        self.processing_queue.clear();
+
+        // add the root node (always at 0, if there is no root we would have returned earlier) to the processing queue
+        self.processing_queue.push(QueueContainer {
+            position: L::root(),
+            node: 0,
+        });
+
+        // then, traverse the tree, as long as something is inside the queue
+        while let Some(QueueContainer {
+            position: current_position,
+            node: current_node_index,
+        }) = self.processing_queue.pop()
+        {
+            // fetch the current node
+            let current_node = self.nodes[current_node_index];
+
+            // if we can subdivide, and the current node does not have children, subdivide the current node
+            if current_node.children.is_none() {
+                // add children to be added
+                for i in 0..L::num_children() {
+                    // chunk to add
+                    let chunk_to_add =
+                        self.get_chunk_from_cache(current_position.get_child(i), chunk_creator);
+
+                    // add the new chunk to be added
+                    self.chunks_to_add.push(ToAddContainer {
+                        position: current_position.get_child(i),
+                        chunk: chunk_to_add,
+                    });
+
+                    // and add the parent
+                    self.chunks_to_add_parent.push(current_node_index);
+                }
+
+                // and add ourselves for deactivation
+                self.chunks_to_deactivate.push(current_node_index);
+            } else if let Some(index) = current_node.children {
+                // queue child nodes for processing
+                for i in 0..L::num_children() {
+                    // wether we can subdivide
+                    let child_pos = current_position.get_child(i);
+                    let can_subdivide = targets.iter().any(|x| x.can_subdivide(child_pos, detail));
+                    if !can_subdivide {
+                        continue;
+                    }
+                    self.processing_queue.push(QueueContainer {
+                        position: child_pos,
+                        node: index.get() + i,
+                    });
+                }
+            }
+        }
+
+        // and return wether an update needs to be done
+        !self.chunks_to_add.is_empty()
+    }
+
     // how it works:
     // each node contains a pointer to it's chunk data and first child
     // start from the root node, which is at 0
@@ -437,8 +529,9 @@ where
     // clear the free list once we only have one chunk (the root) active
     // swap remove chunks, and update the node that references them (nodes won't move due to free list)
 
-    /// prepares the tree for an update.
-    /// this fills the internal lists of what chunks need to be added or removed.
+    /// prepares the tree for an update, an update is an operation that
+    /// adds chunks around specified locations (targets) while also erasing all other chunks.
+    /// this fills the internal lists of what chunks need to be added or removed as appropriate.
     /// # Params
     /// * `targets` The target positions to generate the lod around (QuadVec and OctVec define the center position and max lod in depth for this)
     /// * `detail` The detail for these targets (QuadVec and OctVec define this as amount of chunks around this point)
@@ -624,9 +717,10 @@ where
                                 break;
                             }
                         }
-                        if self.cache_size >0 {
+                        if self.cache_size > 0 {
                             // then assign this chunk into the cache
-                            if let Some(cached_chunk) = self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
+                            if let Some(cached_chunk) =
+                                self.chunk_cache.insert(old_chunk.position, old_chunk.chunk)
                             {
                                 // there might have been another cached chunk
                                 self.chunks_to_delete.push(ToDeleteContainer {
@@ -814,13 +908,12 @@ where
     // gets a chunk from the cache, otehrwise generates one from the given function
     #[inline]
     fn get_chunk_from_cache(&mut self, position: L, chunk_creator: &dyn Fn(L) -> C) -> C {
-         if self.cache_size >0 {
-             if let Some(chunk) = self.chunk_cache.remove(&position)
-             {
-                 return chunk;
-             }
-         }
-        return chunk_creator(position);
+        if self.cache_size > 0 {
+            if let Some(chunk) = self.chunk_cache.remove(&position) {
+                return chunk;
+            }
+        }
+        chunk_creator(position)
     }
 }
 
@@ -844,15 +937,64 @@ mod tests {
     struct TestChunk;
 
     #[test]
-    fn new_tree() {
+    fn update_tree() {
         // make a tree
-        // let mut tree = Tree::<TestChunk, QuadVec>::new(64);
-        //
-        // // as long as we need to update, do so
-        // while tree.prepare_update(&[QuadVec::new(128, 128, 32)], 8,  &TestChunk ) {
-        //     // and actually update
-        //     tree.do_update();
-        // }
+        let mut tree = Tree::<TestChunk, QuadVec>::new(64);
+        // as long as we need to update, do so
+        for tgt in [QuadVec::new(1, 1, 2), QuadVec::new(2, 3, 2)] {
+            dbg!(tgt);
+            while tree.prepare_update(&[tgt], 0, &|_| TestChunk {}) {
+                for c in tree.iter_chunks_to_activate_positions() {
+                    println!("* {c:?}");
+                }
+                for c in tree.iter_chunks_to_deactivate_positions() {
+                    println!("o {c:?}");
+                }
+
+                for c in tree.iter_chunks_to_remove_positions() {
+                    println!("- {c:?}");
+                }
+
+                for c in tree.iter_chunks_to_add_positions() {
+                    println!("+ {c:?}");
+                }
+                println!("updating...");
+                // and actually update
+                tree.do_update();
+            }
+        }
+    }
+    #[test]
+    fn insert_into_tree() {
+        // make a tree
+        let mut tree = Tree::<TestChunk, QuadVec>::new(64);
+        // as long as we need to update, do so
+        for tgt in [QuadVec::new(1, 1, 2), QuadVec::new(2, 3, 2)] {
+            dbg!(tgt);
+            while tree.prepare_insert(&[tgt], 0, &|_| TestChunk {}) {
+                for c in tree.iter_chunks_to_activate_positions() {
+                    println!("* {c:?}");
+                }
+                for c in tree.iter_chunks_to_deactivate_positions() {
+                    println!("o {c:?}");
+                }
+
+                for c in tree.iter_chunks_to_remove_positions() {
+                    println!("- {c:?}");
+                }
+
+                for c in tree.iter_chunks_to_add_positions() {
+                    println!("+ {c:?}");
+                }
+                println!("updating...");
+                // and actually update
+                tree.do_update();
+            }
+        }
+    }
+
+    #[test]
+    pub fn things() {
         //
         // // and move the target
         // while tree.prepare_update(&[QuadVec::new(16, 8, 16)], 8, |_| TestChunk {}) {

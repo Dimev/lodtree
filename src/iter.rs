@@ -906,23 +906,22 @@ mod tests {
             tree.complete_update();
         }
 
-        for i in &tree.chunks {}
+        //for i in &tree.chunks {}
 
         let mut rng = SmallRng::seed_from_u64(42);
-        let mut _rng = rand::thread_rng();
 
-        for ite in 1..NUM_QUERIES {
+        for _ite in 1..NUM_QUERIES {
             let cmax = 1 << D;
             let min = OctVec::new(
-                _rng.gen_range(0..cmax),
-                _rng.gen_range(0..cmax),
-                _rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
                 D,
             );
             let max = OctVec::new(
-                _rng.gen_range(0..cmax),
-                _rng.gen_range(0..cmax),
-                _rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
+                rng.gen_range(0..cmax),
                 D,
             );
             let cmp = min.partial_cmp(&max);
@@ -948,6 +947,4 @@ mod tests {
             println!("  filled {:?}", filled_voxels);
         }
     }
-
-
 }

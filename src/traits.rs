@@ -89,10 +89,10 @@ pub trait LodVec:
     ///
     /// // then check if we are inside the AABB
     /// self.depth  <= max_depth
-    /// 	&& self_x >= min_x
-    /// 	&& self_x < max_x
-    /// 	&& self_y >= min_y
-    /// 	&& self_y < max_y
+    ///     && self_x >= min_x
+    ///     && self_x < max_x
+    ///     && self_y >= min_y
+    ///     && self_y < max_y
     /// }
     /// }
     /// ```

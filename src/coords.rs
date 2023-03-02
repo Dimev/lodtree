@@ -33,7 +33,7 @@ impl PartialOrd for QuadVec {
         } else if (self.x > other.x) && (self.y > other.y) {
             return Some(Ordering::Greater);
         }
-        return None;
+        None
     }
 }
 
@@ -175,7 +175,7 @@ impl LodVec for QuadVec {
         let max_y = max.y >> max_difference;
         // dbg!(min_x, min_y, max_x, max_y);
         // then check if we are inside the AABB
-        self.depth as u8 <= max_depth
+        self.depth  <= max_depth
             && self_x >= min_x
             && self_x <= max_x
             && self_y >= min_y
@@ -228,7 +228,7 @@ impl PartialOrd for OctVec {
         } else if (self.x > other.x) && (self.y > other.y) && (self.z > other.z) {
             return Some(Ordering::Greater);
         }
-        return None;
+        None
     }
 }
 impl OctVec {
@@ -390,7 +390,7 @@ impl LodVec for OctVec {
         let max_z = max.z >> max_difference;
 
         // then check if we are inside the AABB
-        self.depth as u8 <= max_depth
+        self.depth  <= max_depth
             && self_x >= min_x
             && self_x <= max_x
             && self_y >= min_y
