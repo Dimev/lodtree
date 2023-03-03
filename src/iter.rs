@@ -471,8 +471,10 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIter<'a, C, 
                     // and if it has children
                     if let Some(children) = node.children {
                         // children, so node
-                        self.stack
-                            .push((position, Some(self.tree.nodes[(children.get() + i) as usize])));
+                        self.stack.push((
+                            position,
+                            Some(self.tree.nodes[(children.get() + i) as usize]),
+                        ));
                     } else {
                         // no node, so no chunk
                         self.stack.push((position, None));
@@ -579,8 +581,10 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, 
                     // and if it has children
                     if let Some(children) = node.children {
                         // children, so node
-                        self.stack
-                            .push((position, Some(self.tree.nodes[(children.get() + i) as usize])));
+                        self.stack.push((
+                            position,
+                            Some(self.tree.nodes[(children.get() + i) as usize]),
+                        ));
                     } else {
                         // no node, so no chunk
                         self.stack.push((position, None));
@@ -640,7 +644,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L>
                 if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
                     // and push to the stack
                     self.stack
-                        .push((position, self.tree.nodes[(children.get()  + i)as usize]));
+                        .push((position, self.tree.nodes[(children.get() + i) as usize]));
                 }
             }
         }

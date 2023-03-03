@@ -21,8 +21,8 @@ pub(crate) struct TreeNode {
 // utility struct for holding actual chunks and the node that owns them
 #[derive(Clone, Debug)]
 pub(crate) struct ChunkContainer<C: Sized, L: LodVec> {
-    pub(crate) chunk: C, // actual data inside the chunk
-    pub(crate) index: u32, // index of the node that holds this chunk
+    pub(crate) chunk: C,    // actual data inside the chunk
+    pub(crate) index: u32,  // index of the node that holds this chunk
     pub(crate) position: L, // where the chunk is (as this can not be recovered from node tree)
 }
 
@@ -58,7 +58,7 @@ pub struct ToDeleteContainer<C: Sized, L: LodVec> {
 // utility struct for holding chunks in the queue
 #[derive(Clone, Debug)]
 struct QueueContainer<L: LodVec> {
-    node: u32, // chunk index
+    node: u32,   // chunk index
     position: L, // and it's position
 }
 
@@ -142,7 +142,7 @@ where
                 current_position = found_position;
 
                 // and the node is at the index of the child nodes + index
-                current = self.nodes[(current.children.unwrap().get()  + index ) as usize];
+                current = self.nodes[(current.children.unwrap().get() + index) as usize];
             } else {
                 // if no child got found that matched the item, return none
                 return None;
@@ -273,7 +273,7 @@ where
     /// get the position of a chunk pending activation
     #[inline]
     pub fn get_position_of_chunk_to_activate(&self, index: usize) -> L {
-        self.chunks[self.nodes[self.chunks_to_activate[index]as usize].chunk as usize].position
+        self.chunks[self.nodes[self.chunks_to_activate[index] as usize].chunk as usize].position
     }
 
     /// get the number of chunks pending deactivation
@@ -285,13 +285,13 @@ where
     /// get a chunk pending deactivation
     #[inline]
     pub fn get_chunk_to_deactivate(&self, index: usize) -> &C {
-        &self.chunks[self.nodes[self.chunks_to_deactivate[index]as usize].chunk as usize].chunk
+        &self.chunks[self.nodes[self.chunks_to_deactivate[index] as usize].chunk as usize].chunk
     }
 
     /// get a mutable chunk pending deactivation
     #[inline]
     pub fn get_chunk_to_deactivate_mut(&mut self, index: usize) -> &mut C {
-        &mut self.chunks[self.nodes[self.chunks_to_deactivate[index] as usize ].chunk as usize].chunk
+        &mut self.chunks[self.nodes[self.chunks_to_deactivate[index] as usize].chunk as usize].chunk
     }
 
     /// gets a mutable pointer to a chunk that is pending deactivation
@@ -304,7 +304,7 @@ where
     /// get the position of a chunk pending deactivation
     #[inline]
     pub fn get_position_of_chunk_to_deactivate(&self, index: usize) -> L {
-        self.chunks[self.nodes[self.chunks_to_deactivate[index]as usize].chunk as usize].position
+        self.chunks[self.nodes[self.chunks_to_deactivate[index] as usize].chunk as usize].position
     }
 
     /// get the number of chunks pending removal
@@ -316,13 +316,14 @@ where
     /// get a chunk pending removal
     #[inline]
     pub fn get_chunk_to_remove(&self, index: usize) -> &C {
-        &self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize ].chunk as usize].chunk
+        &self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize].chunk as usize].chunk
     }
 
     /// get a mutable chunk pending removal
     #[inline]
     pub fn get_chunk_to_remove_mut(&mut self, index: usize) -> &mut C {
-        &mut self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize ].chunk as usize].chunk
+        &mut self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize].chunk as usize]
+            .chunk
     }
 
     /// gets a mutable pointer to a chunk that is pending removal
@@ -335,7 +336,7 @@ where
     /// get the position of a chunk pending removal
     #[inline]
     pub fn get_position_of_chunk_to_remove(&self, index: usize) -> L {
-        self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize ].chunk as usize].position
+        self.chunks[self.nodes[self.chunks_to_remove[index].chunk as usize].chunk as usize].position
     }
 
     /// get the number of chunks to be added
@@ -583,7 +584,7 @@ where
         }) = self.processing_queue.pop()
         {
             // fetch the current node
-            let current_node = self.nodes[current_node_index  as usize];
+            let current_node = self.nodes[current_node_index as usize];
 
             // wether we can subdivide
             let can_subdivide = targets
@@ -623,7 +624,7 @@ where
                     for i in 0..L::num_children() {
                         // no need to do this in reverse, that way the last node removed will be added to the free list, which is also the first thing used by the adding logic
                         self.chunks_to_remove.push(ToRemoveContainer {
-                            chunk: index.get() + i ,
+                            chunk: index.get() + i,
                             parent: current_node_index,
                         });
                     }
@@ -666,11 +667,11 @@ where
         // but we do need to cache these
         {
             // remove the node from the tree
-            self.nodes[parent_index  as usize].children = None;
+            self.nodes[parent_index as usize].children = None;
             self.free_list.push_back(index);
 
             // and remove the chunk
-            let chunk_index = self.nodes[index  as usize].chunk;
+            let chunk_index = self.nodes[index as usize].chunk;
 
             // but not so fast, because if we can overwrite it with a new chunk, do so
             // that way we can avoid a copy later on, which might be expensive
@@ -681,7 +682,7 @@ where
                 let new_node_index = match self.free_list.pop_front() {
                     Some(x) => {
                         // reuse a free node
-                        self.nodes[x  as usize] = TreeNode {
+                        self.nodes[x as usize] = TreeNode {
                             children: None,
                             chunk: chunk_index,
                         };
@@ -694,7 +695,7 @@ where
                             position,
                         };
 
-                        std::mem::swap(&mut old_chunk, &mut self.chunks[chunk_index  as usize]);
+                        std::mem::swap(&mut old_chunk, &mut self.chunks[chunk_index as usize]);
 
                         // old chunk shouldn't be mutable anymore
                         let old_chunk = old_chunk;
@@ -745,12 +746,12 @@ where
                 if new_node_index >= L::num_children() {
                     // because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
                     // so we need to adjust for that
-                    self.nodes[parent_index  as usize].children =
+                    self.nodes[parent_index as usize].children =
                         NonZeroU32::new(new_node_index - (L::num_children() - 1));
                 }
             } else {
                 // otherwise we do need to do a regular swap remove
-                let old_chunk = self.chunks.swap_remove(chunk_index  as usize);
+                let old_chunk = self.chunks.swap_remove(chunk_index as usize);
 
                 // now, we can try to add this chunk into the cache
                 // first, remove any extra nodes if they are in the cache
@@ -817,7 +818,7 @@ where
                         chunk: self.chunks.len() as u32,
                     });
                     self.chunks.push(ChunkContainer {
-                        index: self.nodes.len() as u32 - 1 ,
+                        index: self.nodes.len() as u32 - 1,
                         chunk,
                         position,
                     });
@@ -1036,7 +1037,7 @@ mod tests {
         // }
     }
     #[test]
-    pub fn alignment(){
+    pub fn alignment() {
         assert_eq!(std::mem::size_of::<TreeNode>(), 8);
     }
 }

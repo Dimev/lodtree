@@ -176,7 +176,7 @@ impl LodVec for QuadVec {
         let max_y = max.y >> max_difference;
         // dbg!(min_x, min_y, max_x, max_y);
         // then check if we are inside the AABB
-        self.depth  <= max_depth
+        self.depth <= max_depth
             && self_x >= min_x
             && self_x <= max_x
             && self_y >= min_y
@@ -392,7 +392,7 @@ impl LodVec for OctVec {
         let max_z = max.z >> max_difference;
 
         // then check if we are inside the AABB
-        self.depth  <= max_depth
+        self.depth <= max_depth
             && self_x >= min_x
             && self_x <= max_x
             && self_y >= min_y
