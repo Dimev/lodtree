@@ -108,10 +108,7 @@ impl LodVec for QuadVec {
         }
     }
 
-    #[inline]
-    fn num_children() -> u32 {
-        4
-    }
+    const NUM_CHILDREN: u32 = 4;
 
     #[inline]
     fn root() -> Self {
@@ -310,10 +307,7 @@ impl LodVec for OctVec {
         }
     }
 
-    #[inline]
-    fn num_children() -> u32 {
-        8
-    }
+    const NUM_CHILDREN: u32 = 8;
 
     #[inline]
     fn root() -> Self {

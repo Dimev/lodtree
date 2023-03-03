@@ -18,6 +18,21 @@ pub(crate) struct TreeNode {
     pub(crate) chunk: u32, //TODO change this to Option<NonZeroU32> such that nodes with no chunks can be created
 }
 
+//TODO: a better treenode structure
+// Tree node that encompasses 4/8 children at once. Each child has two pointers:
+// children[i] will point to the TreeNode which encompasses its children
+// chunk[i] will point to the data chunk.
+// both pointers may be "None", indicating either no children, or no data
+//#[derive(Clone, Debug)]
+// pub(crate) struct TreeNode2<L: LodVec>  where [(); L::NUM_CHILDREN as usize]: {
+//     // children, these can't be the root (index 0), so we can use Some and Nonzero for slightly more compact memory
+//     // children are also contiguous, so we can assume that this to this + num children - 1 are all the children of this node
+//     pub(crate) children: [Option<NonZeroU32>; L::NUM_CHILDREN as usize],
+//
+//     // where the chunk for this node is stored
+//     pub(crate) chunk: [Option<NonZeroU32>; L::NUM_CHILDREN as usize],
+// }
+
 // utility struct for holding actual chunks and the node that owns them
 #[derive(Clone, Debug)]
 pub(crate) struct ChunkContainer<C: Sized, L: LodVec> {
@@ -134,7 +149,7 @@ where
             current.children?;
 
             // if not, go over the node children
-            if let Some((index, found_position)) = (0..L::num_children())
+            if let Some((index, found_position)) = (0..L::NUM_CHILDREN)
                 .map(|i| (i, current_position.get_child(i)))
                 .find(|(_, x)| x.contains_child_node(position))
             {
@@ -426,7 +441,7 @@ where
     }
 
     /// Adds chunks at and around specified locations.
-    /// This opertion will also add chunks at other locations around the target to fullfill the
+    /// This operation will also add chunks at other locations around the target to fullfill the
     /// datastructure constraints (such that no partially filled nodes exist).
     pub fn prepare_insert(
         &mut self,
@@ -434,8 +449,12 @@ where
         detail: u32,
         chunk_creator: &dyn Fn(L) -> C,
     ) -> bool {
+        //FIXME: this function currently will dry-run once for every update to make sure
+        // there is nothing left to update. This is a waste of CPU time, especially for many targets
+
         // first, clear the previous arrays
         self.chunks_to_add.clear();
+        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -475,11 +494,12 @@ where
         {
             // fetch the current node
             let current_node = self.nodes[current_node_index as usize];
-
+            //dbg!(current_node_index, current_node);
             // if we can subdivide, and the current node does not have children, subdivide the current node
             if current_node.children.is_none() {
+                //println!("adding children");
                 // add children to be added
-                for i in 0..L::num_children() {
+                for i in 0..L::NUM_CHILDREN {
                     // chunk to add
                     let chunk_to_add =
                         self.get_chunk_from_cache(current_position.get_child(i), chunk_creator);
@@ -497,23 +517,32 @@ where
                 // and add ourselves for deactivation
                 self.chunks_to_deactivate.push(current_node_index);
             } else if let Some(index) = current_node.children {
+                //println!("has children at {index:?}");
                 // queue child nodes for processing
-                for i in 0..L::num_children() {
+                for i in 0..L::NUM_CHILDREN {
                     // wether we can subdivide
                     let child_pos = current_position.get_child(i);
-                    let can_subdivide = targets.iter().any(|x| x.can_subdivide(child_pos, detail));
-                    if !can_subdivide {
-                        continue;
+                    //dbg!(child_pos);
+                    for t in targets {
+                        if *t == child_pos {
+                            //println!("Found match for target {t:?}");
+                            self.chunks[(index.get() + i) as usize].chunk =
+                                chunk_creator(child_pos);
+                            continue;
+                        }
+                        if t.can_subdivide(child_pos, detail) {
+                            self.processing_queue.push(QueueContainer {
+                                position: child_pos,
+                                node: index.get() + i,
+                            });
+                            break;
+                        }
                     }
-                    self.processing_queue.push(QueueContainer {
-                        position: child_pos,
-                        node: index.get() + i,
-                    });
                 }
             }
         }
 
-        // and return wether an update needs to be done
+        // and return whether an update needs to be done
         !self.chunks_to_add.is_empty()
     }
 
@@ -544,8 +573,12 @@ where
         detail: u32,
         chunk_creator: &dyn Fn(L) -> C,
     ) -> bool {
+        //FIXME: this function currently will dry-run once for every update to make sure
+        // there is nothing left to update. This is a waste of CPU time, especially for many targets
+
         // first, clear the previous arrays
         self.chunks_to_add.clear();
+        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -594,7 +627,7 @@ where
             // if we can subdivide, and the current node does not have children, subdivide the current node
             if can_subdivide && current_node.children.is_none() {
                 // add children to be added
-                for i in 0..L::num_children() {
+                for i in 0..L::NUM_CHILDREN {
                     // chunk to add
                     let chunk_to_add =
                         self.get_chunk_from_cache(current_position.get_child(i), chunk_creator);
@@ -614,14 +647,14 @@ where
             } else if let Some(index) = current_node.children {
                 // otherwise, if we cant subdivide and have children, remove our children
                 if !can_subdivide
-                    && !(0..L::num_children())
+                    && !(0..L::NUM_CHILDREN)
                         .into_iter()
                         .any(|i| self.nodes[(i + index.get()) as usize].children.is_some())
                 {
                     // first, queue ourselves for activation
                     self.chunks_to_activate.push(current_node_index);
 
-                    for i in 0..L::num_children() {
+                    for i in 0..L::NUM_CHILDREN {
                         // no need to do this in reverse, that way the last node removed will be added to the free list, which is also the first thing used by the adding logic
                         self.chunks_to_remove.push(ToRemoveContainer {
                             chunk: index.get() + i,
@@ -630,7 +663,7 @@ where
                     }
                 } else {
                     // queue child nodes for processing if we didn't subdivide or clean up our children
-                    for i in 0..L::num_children() {
+                    for i in 0..L::NUM_CHILDREN {
                         self.processing_queue.push(QueueContainer {
                             position: current_position.get_child(i),
                             node: index.get() + i,
@@ -743,11 +776,11 @@ where
                 // because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such].
                 // node 0 is the root, so the last child it has will be on num_children.
                 // then subtracting num_children - 1 from that gives us node 1, which is the first child of the root.
-                if new_node_index >= L::num_children() {
+                if new_node_index >= L::NUM_CHILDREN {
                     // because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
                     // so we need to adjust for that
                     self.nodes[parent_index as usize].children =
-                        NonZeroU32::new(new_node_index - (L::num_children() - 1));
+                        NonZeroU32::new(new_node_index - (L::NUM_CHILDREN - 1));
                 }
             } else {
                 // otherwise we do need to do a regular swap remove
@@ -830,11 +863,11 @@ where
             // because the last node we come by in with ordered iteration is on num_children - 1, we need to set it as such].
             // node 0 is the root, so the last child it has will be on num_children.
             // then subtracting num_children - 1 from that gives us node 1, which is the first child of the root.
-            if new_node_index >= L::num_children() {
+            if new_node_index >= L::NUM_CHILDREN {
                 // because we loop in order, and our nodes are contiguous, the first node of the children got added on index i - (num children - 1)
                 // so we need to adjust for that
                 self.nodes[parent_index as usize].children =
-                    NonZeroU32::new(new_node_index - (L::num_children() - 1));
+                    NonZeroU32::new(new_node_index - (L::NUM_CHILDREN - 1));
             }
         }
 
@@ -852,6 +885,7 @@ where
 
         // and clear all internal arrays, so if this method is accidentally called twice, no weird behavior would happen
         self.chunks_to_add.clear();
+        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -871,6 +905,7 @@ where
         self.nodes.clear();
         self.free_list.clear();
         self.chunks_to_add.clear();
+        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -970,7 +1005,13 @@ mod tests {
         // make a tree
         let mut tree = Tree::<TestChunk, QuadVec>::new(64);
         // as long as we need to update, do so
-        for tgt in [QuadVec::new(1, 1, 2), QuadVec::new(2, 3, 2)] {
+        for tgt in [
+            QuadVec::new(1, 1, 1),
+            QuadVec::new(0, 1, 1),
+            QuadVec::new(2, 3, 2),
+            QuadVec::new(2, 2, 2),
+        ] {
+            println!("====NEXT TARGET =====");
             dbg!(tgt);
             while tree.prepare_insert(&[tgt], 0, &|_| TestChunk {}) {
                 for c in tree.iter_chunks_to_activate_positions() {

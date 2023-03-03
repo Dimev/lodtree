@@ -423,7 +423,7 @@ impl<L: LodVec> Iterator for ChunksInBoundIter<L> {
         let current = self.stack.pop()?;
 
         // go over all child nodes
-        for i in 0..L::num_children() {
+        for i in 0..L::NUM_CHILDREN {
             let position = current.get_child(i);
 
             // if they are in bounds, and the correct depth, add them to the stack
@@ -461,7 +461,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIter<'a, C, 
         let (current_position, current_node) = self.stack.pop()?;
 
         // go over all child nodes
-        for i in 0..L::num_children() {
+        for i in 0..L::NUM_CHILDREN {
             let position = current_position.get_child(i);
 
             // if they are in bounds, and the correct depth, add them to the stack
@@ -524,7 +524,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIter<'a, C, L> {
         let (current_position, current_node) = self.stack.pop()?;
 
         // go over all child nodes
-        for i in 0..L::num_children() {
+        for i in 0..L::NUM_CHILDREN {
             let position = current_position.get_child(i);
 
             // if the node has children
@@ -571,7 +571,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, 
         let (current_position, current_node) = self.stack.pop()?;
 
         // go over all child nodes
-        for i in 0..L::num_children() {
+        for i in 0..L::NUM_CHILDREN {
             let position = current_position.get_child(i);
 
             // if they are in bounds, and the correct depth, add them to the stack
@@ -635,7 +635,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L>
         let (current_position, current_node) = self.stack.pop()?;
 
         // go over all child nodes
-        for i in 0..L::num_children() {
+        for i in 0..L::NUM_CHILDREN {
             let position = current_position.get_child(i);
 
             // if the node has children

@@ -4,13 +4,12 @@
 /// trait for defining a Level of Detail vector.
 /// such a vector contains the current position in the octree (3d coords), as well as the lod level it's at, in integer coords.
 pub trait LodVec:
-    std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default + PartialOrd
+    std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default + PartialOrd + std::fmt::Debug
 {
     /// gets one of the child node position of this node, defined by it's index.
     fn get_child(self, index: u32) -> Self;
-
-    /// get the number of child nodes a node can have in the tree.
-    fn num_children() -> u32;
+    /// the number of child nodes a node can have in the tree.
+    const NUM_CHILDREN: u32;
 
     /// returns the lod vector as if it's at the root of the tree.
     fn root() -> Self;
