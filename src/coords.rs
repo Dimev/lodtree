@@ -90,7 +90,7 @@ impl QuadVec {
 
 impl LodVec for QuadVec {
     #[inline]
-    fn get_child(self, index: usize) -> Self {
+    fn get_child(self, index: u32) -> Self {
         debug_assert!(index < 4);
         // the positions, doubled in scale
         let x = self.x << 1;
@@ -109,7 +109,7 @@ impl LodVec for QuadVec {
     }
 
     #[inline]
-    fn num_children() -> usize {
+    fn num_children() -> u32 {
         4
     }
 
@@ -123,7 +123,8 @@ impl LodVec for QuadVec {
     }
 
     #[inline]
-    fn can_subdivide(self, node: Self, detail: u64) -> bool {
+    fn can_subdivide(self, node: Self, detail: u32) -> bool {
+        let detail = detail as u64;
         // return early if the level of this chunk is too high
         if node.depth >= self.depth {
             return false;
@@ -288,7 +289,7 @@ impl OctVec {
 
 impl LodVec for OctVec {
     #[inline]
-    fn get_child(self, index: usize) -> Self {
+    fn get_child(self, index: u32) -> Self {
         debug_assert!(index < 8);
         // the positions, doubled in scale
         let x = self.x << 1;
@@ -310,7 +311,7 @@ impl LodVec for OctVec {
     }
 
     #[inline]
-    fn num_children() -> usize {
+    fn num_children() -> u32 {
         8
     }
 
@@ -325,7 +326,8 @@ impl LodVec for OctVec {
     }
 
     #[inline]
-    fn can_subdivide(self, node: Self, detail: u64) -> bool {
+    fn can_subdivide(self, node: Self, detail: u32) -> bool {
+        let detail = detail as u64;
         // return early if the level of this chunk is too high
         if node.depth >= self.depth {
             return false;

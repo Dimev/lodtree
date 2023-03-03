@@ -472,7 +472,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIter<'a, C, 
                     if let Some(children) = node.children {
                         // children, so node
                         self.stack
-                            .push((position, Some(self.tree.nodes[children.get() + i])));
+                            .push((position, Some(self.tree.nodes[(children.get() + i) as usize])));
                     } else {
                         // no node, so no chunk
                         self.stack.push((position, None));
@@ -486,7 +486,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIter<'a, C, 
         // and return this item from the stack
         if let Some(node) = current_node {
             // there is a node, so get the chunk it has
-            let chunk = &self.tree.chunks[node.chunk].chunk;
+            let chunk = &self.tree.chunks[node.chunk as usize].chunk;
 
             // and return it
             Some((current_position, Some(chunk)))
@@ -531,7 +531,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIter<'a, C, L> {
                 if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
                     // and push to the stack
                     self.stack
-                        .push((position, self.tree.nodes[children.get() + i]));
+                        .push((position, self.tree.nodes[(children.get() + i) as usize]));
                 }
             }
         }
@@ -539,7 +539,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIter<'a, C, L> {
         // and return the position and node
         Some((
             current_position,
-            &self.tree.chunks[current_node.chunk].chunk,
+            &self.tree.chunks[current_node.chunk as usize].chunk,
         ))
     }
 }
@@ -580,7 +580,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, 
                     if let Some(children) = node.children {
                         // children, so node
                         self.stack
-                            .push((position, Some(self.tree.nodes[children.get() + i])));
+                            .push((position, Some(self.tree.nodes[(children.get() + i) as usize])));
                     } else {
                         // no node, so no chunk
                         self.stack.push((position, None));
@@ -594,7 +594,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndMaybeTreeIterMut<'a, 
         // and return this item from the stack
         if let Some(node) = current_node {
             // there is a node, so get the chunk it has
-            let chunk = &mut self.tree.chunks[node.chunk].chunk as *mut C;
+            let chunk = &mut self.tree.chunks[node.chunk as usize].chunk as *mut C;
 
             // and return it
             // Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
@@ -640,7 +640,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L>
                 if position.is_inside_bounds(self.bound_min, self.bound_max, self.max_depth) {
                     // and push to the stack
                     self.stack
-                        .push((position, self.tree.nodes[children.get() + i]));
+                        .push((position, self.tree.nodes[(children.get()  + i)as usize]));
                 }
             }
         }
@@ -648,7 +648,7 @@ impl<'a, C: Sized, L: LodVec> Iterator for ChunksInBoundAndTreeIterMut<'a, C, L>
         // and return the position and node
         // Safety: The iterator lives at least as long as the tree, and no changes can be made to the tree while it's borrowed by the iterator
         Some((current_position, unsafe {
-            (&mut self.tree.chunks[current_node.chunk].chunk as *mut C).as_mut()?
+            (&mut self.tree.chunks[current_node.chunk as usize].chunk as *mut C).as_mut()?
         }))
     }
 }
@@ -899,7 +899,7 @@ mod tests {
 
         let mut tree = Tree::new(65);
         let qv = OctVec::new(R, R, R, D);
-        while tree.prepare_update(&[qv], R, &chunk_creator) {
+        while tree.prepare_update(&[qv], R as u32, &chunk_creator) {
             // do the update
             tree.do_update();
             // and clean

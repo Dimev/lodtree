@@ -47,7 +47,7 @@
 //! let needs_updating = tree.prepare_update(
 //!     &[OctVec::new(8, 8, 8, 8)], // the target positions to generate the lod around
 //!     4, // amount of detail
-//!     |pos| Chunk {} // and the function to construct the chunk with
+//!     &|pos| Chunk {} // and the function to construct the chunk with
 //!                    // NOTE: this is only called for completely new chunks, not the ones loaded from the chunk cache!
 //! );
 //! ```

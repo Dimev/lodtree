@@ -7,10 +7,10 @@ pub trait LodVec:
     std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default + PartialOrd
 {
     /// gets one of the child node position of this node, defined by it's index.
-    fn get_child(self, index: usize) -> Self;
+    fn get_child(self, index: u32) -> Self;
 
     /// get the number of child nodes a node can have in the tree.
-    fn num_children() -> usize;
+    fn num_children() -> u32;
 
     /// returns the lod vector as if it's at the root of the tree.
     fn root() -> Self;
@@ -60,7 +60,7 @@ pub trait LodVec:
     /// }
     /// # }
     /// ```
-    fn can_subdivide(self, node: Self, detail: u64) -> bool;
+    fn can_subdivide(self, node: Self, detail: u32) -> bool;
 
     /// check if this chunk is inside of a bounding box
     /// where min is the lowest corner of the box, and max is the highest corner
