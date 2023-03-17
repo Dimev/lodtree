@@ -55,7 +55,7 @@ fn create_and_fill_octree<C: Default>(num_chunks: u32, depth: u8) -> Tree<C, Oct
             depth,
         );
 
-        while tree.prepare_insert(&[qv], 0, &|_p| C::default()) {
+        while tree.prepare_insert(&[qv], 0, &mut |_p| C::default()) {
             // do the update
             tree.do_update();
             // and clean

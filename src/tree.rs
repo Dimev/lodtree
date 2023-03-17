@@ -447,7 +447,7 @@ where
         &mut self,
         targets: &[L],
         detail: u32,
-        chunk_creator: &dyn Fn(L) -> C,
+        chunk_creator: &mut dyn FnMut(L) -> C,
     ) -> bool {
         //FIXME: this function currently will dry-run once for every update to make sure
         // there is nothing left to update. This is a waste of CPU time, especially for many targets
@@ -571,7 +571,7 @@ where
         &mut self,
         targets: &[L],
         detail: u32,
-        chunk_creator: &dyn Fn(L) -> C,
+        chunk_creator: &mut dyn FnMut(L) -> C,
     ) -> bool {
         //FIXME: this function currently will dry-run once for every update to make sure
         // there is nothing left to update. This is a waste of CPU time, especially for many targets
@@ -943,7 +943,7 @@ where
 
     // gets a chunk from the cache, otehrwise generates one from the given function
     #[inline]
-    fn get_chunk_from_cache(&mut self, position: L, chunk_creator: &dyn Fn(L) -> C) -> C {
+    fn get_chunk_from_cache(&mut self, position: L, chunk_creator: &mut dyn FnMut(L) -> C) -> C {
         if self.cache_size > 0 {
             if let Some(chunk) = self.chunk_cache.remove(&position) {
                 return chunk;
@@ -979,7 +979,7 @@ mod tests {
         // as long as we need to update, do so
         for tgt in [QuadVec::new(1, 1, 2), QuadVec::new(2, 3, 2)] {
             dbg!(tgt);
-            while tree.prepare_update(&[tgt], 0, &|_| TestChunk {}) {
+            while tree.prepare_update(&[tgt], 0, &mut |_| TestChunk {}) {
                 for c in tree.iter_chunks_to_activate_positions() {
                     println!("* {c:?}");
                 }
@@ -1013,7 +1013,7 @@ mod tests {
         ] {
             println!("====NEXT TARGET =====");
             dbg!(tgt);
-            while tree.prepare_insert(&[tgt], 0, &|_| TestChunk {}) {
+            while tree.prepare_insert(&[tgt], 0, &mut |_| TestChunk {}) {
                 for c in tree.iter_chunks_to_activate_positions() {
                     println!("* {c:?}");
                 }

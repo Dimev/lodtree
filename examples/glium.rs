@@ -135,7 +135,7 @@ fn draw(mouse_pos: (f32, f32), tree: &mut Tree<Chunk, QuadVec>, ctx: &RenderCont
     }
 
     let qv = QuadVec::from_float_coords(mouse_pos.0 as f64, (1.0 - mouse_pos.1) as f64, 6);
-    if tree.prepare_update(&[qv], 2, &chunk_creator) {
+    if tree.prepare_update(&[qv], 2, &mut chunk_creator) {
         // position should already have been set, so we can just change the visibility
         for chunk in tree.iter_chunks_to_activate_mut() {
             chunk.visible = true;

@@ -903,7 +903,7 @@ mod tests {
 
         let mut tree = Tree::new(65);
         let qv = OctVec::new(R, R, R, D);
-        while tree.prepare_update(&[qv], R as u32, &chunk_creator) {
+        while tree.prepare_update(&[qv], R as u32, &mut chunk_creator) {
             // do the update
             tree.do_update();
             // and clean
@@ -942,9 +942,9 @@ mod tests {
             };
             let mut filled_voxels: u32 = 0;
             //println!("{:?}  {:?} {:?}", ite, min, max);
-            for i in tree.iter_all_chunks_in_bounds_and_tree(min, max, D) {
-                if i.1.visible {
-                    println!(" Sphere chunk {:?}", i.0);
+            for (l, c) in tree.iter_all_chunks_in_bounds_and_tree(min, max, D) {
+                if c.visible {
+                    println!(" Sphere chunk {:?}", l);
                     filled_voxels += 1;
                 }
             }

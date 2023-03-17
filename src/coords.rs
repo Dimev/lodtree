@@ -238,9 +238,12 @@ impl OctVec {
     /// * `depth` the lod depth the coord is at. This is soft limited at roughly 60, and the tree might behave weird if it gets higher.
     #[inline]
     pub fn new(x: u64, y: u64, z: u64, depth: u8) -> Self {
+        debug_assert!(x < (1 << depth));
+        debug_assert!(y < (1 << depth));
+        debug_assert!(z < (1 << depth));
+        debug_assert!(depth <= 60);
         Self { x, y, z, depth }
     }
-
     /// creates a new vector from floating point coords.
     /// mapped so that (0, 0, 0) is the front bottom left corner and (1, 1, 1) is the back top right.
     /// # Args
