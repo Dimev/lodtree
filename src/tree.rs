@@ -51,6 +51,8 @@ pub struct ToAddContainer<C: Sized, L: LodVec> {
 
     /// Position of the chunk to add
     pub position: L,
+    /// Index of the parent node
+    parent_node_index: u32,
 }
 
 // utility struct for holding chunks to remove
@@ -90,10 +92,6 @@ pub struct Tree<C: Sized, L: LodVec> {
 
     /// list of free nodes in the Tree, to allocate new nodes into
     free_list: VecDeque<u32>,
-
-    /// parent chunk indices of the chunks to be added.
-    /// tuple of the parent index and the position.
-    chunks_to_add_parent: Vec<u32>,
 
     /// actual chunks to add during next update
     chunks_to_add: Vec<ToAddContainer<C, L>>,
@@ -171,7 +169,6 @@ where
         // make a new Tree
         // also allocate some room for nodes
         Self {
-            chunks_to_add_parent: Vec::new(),
             chunks_to_add: Vec::new(),
             chunks_to_remove: Vec::new(),
             chunks_to_activate: Vec::new(),
@@ -193,7 +190,6 @@ where
         // make a new Tree
         // also allocate some room for nodes
         Self {
-            chunks_to_add_parent: Vec::with_capacity(capacity),
             chunks_to_add: Vec::with_capacity(capacity),
             chunks_to_remove: Vec::with_capacity(capacity),
             chunks_to_activate: Vec::with_capacity(capacity),
@@ -454,7 +450,6 @@ where
 
         // first, clear the previous arrays
         self.chunks_to_add.clear();
-        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -468,10 +463,8 @@ where
             self.chunks_to_add.push(ToAddContainer {
                 position: L::root(),
                 chunk: chunk_to_add,
+                parent_node_index:0,
             });
-
-            // and the parent
-            self.chunks_to_add_parent.push(0);
 
             // and an update is needed
             return true;
@@ -508,10 +501,9 @@ where
                     self.chunks_to_add.push(ToAddContainer {
                         position: current_position.get_child(i),
                         chunk: chunk_to_add,
+                        parent_node_index:current_node_index,
                     });
 
-                    // and add the parent
-                    self.chunks_to_add_parent.push(current_node_index);
                 }
 
                 // and add ourselves for deactivation
@@ -578,7 +570,6 @@ where
 
         // first, clear the previous arrays
         self.chunks_to_add.clear();
-        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -592,10 +583,9 @@ where
             self.chunks_to_add.push(ToAddContainer {
                 position: L::root(),
                 chunk: chunk_to_add,
+                parent_node_index:0,
             });
 
-            // and the parent
-            self.chunks_to_add_parent.push(0);
 
             // and an update is needed
             return true;
@@ -636,10 +626,9 @@ where
                     self.chunks_to_add.push(ToAddContainer {
                         position: current_position.get_child(i),
                         chunk: chunk_to_add,
+                        parent_node_index:current_node_index,
                     });
 
-                    // and add the parent
-                    self.chunks_to_add_parent.push(current_node_index);
                 }
 
                 // and add ourselves for deactivation
@@ -686,10 +675,7 @@ where
 
         // first, get the iterator for chunks that will be added
         // this becomes useful later
-        let mut chunks_to_add_iter = self
-            .chunks_to_add_parent
-            .drain(..)
-            .zip(self.chunks_to_add.drain(..));
+        let mut chunks_to_add_iter = self.chunks_to_add.drain(..);
 
         // then, remove old chunks, or cache them
         // we'll drain the vector, as we don't need it anymore afterward
@@ -708,7 +694,7 @@ where
 
             // but not so fast, because if we can overwrite it with a new chunk, do so
             // that way we can avoid a copy later on, which might be expensive
-            if let Some((parent_index, ToAddContainer { position, chunk })) =
+            if let Some(ToAddContainer { position, chunk, parent_node_index:parent_index}) =
                 chunks_to_add_iter.next()
             {
                 // add the node
@@ -828,7 +814,7 @@ where
 
         // add new chunks
         // we'll drain the vector here as well, as we won't need it anymore afterward
-        for (parent_index, ToAddContainer { position, chunk }) in chunks_to_add_iter {
+        for ToAddContainer { position, chunk, parent_node_index:parent_index } in chunks_to_add_iter {
             // add the node
             let new_node_index = match self.free_list.pop_front() {
                 Some(x) => {
@@ -885,7 +871,6 @@ where
 
         // and clear all internal arrays, so if this method is accidentally called twice, no weird behavior would happen
         self.chunks_to_add.clear();
-        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
@@ -905,7 +890,6 @@ where
         self.nodes.clear();
         self.free_list.clear();
         self.chunks_to_add.clear();
-        self.chunks_to_add_parent.clear();
         self.chunks_to_remove.clear();
         self.chunks_to_activate.clear();
         self.chunks_to_deactivate.clear();
