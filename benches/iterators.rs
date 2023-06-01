@@ -6,21 +6,20 @@ use rand::{Rng, SeedableRng};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 const N_LOOKUPS: usize = 40;
-fn generate_area_bounds(rng: &mut SmallRng) -> (OctVec, OctVec) {
-    const D: u8 = 4;
-    let cmax = 1 << D;
+fn generate_area_bounds(rng: &mut SmallRng, depth:u8) -> (OctVec, OctVec) {
+    let cmax = 1 << depth;
 
     let min = OctVec::new(
         rng.gen_range(0..cmax - 1),
         rng.gen_range(0..cmax - 1),
         rng.gen_range(0..cmax - 1),
-        D,
+        depth,
     );
     let max = OctVec::new(
         rng.gen_range(min.x + 1..cmax),
         rng.gen_range(min.y + 1..cmax),
         rng.gen_range(min.z + 1..cmax),
-        D,
+        depth,
     );
     return (min, max);
 }
@@ -65,21 +64,21 @@ fn create_and_fill_octree<C: Default>(num_chunks: u32, depth: u8) -> Tree<C, Oct
     tree
 }
 
-fn bench_lookups_in_octree(tree: &Tree<ChuChunk, OctVec>) {
+fn bench_lookups_in_octree(tree: &Tree<ChuChunk, OctVec>, depth:u8) {
     let mut rng = SmallRng::seed_from_u64(42);
     for _ in 0..N_LOOKUPS {
-        let (min, max) = generate_area_bounds(&mut rng);
-        for i in tree.iter_all_chunks_in_bounds_and_tree(min, max, 4) {
+        let (min, max) = generate_area_bounds(&mut rng, depth);
+        for i in tree.iter_all_chunks_in_bounds_and_tree(min, max, min.depth) {
             black_box(i);
         }
     }
 }
 
-fn bench_mut_lookups_in_octree(tree: &mut Tree<ChuChunk, OctVec>) {
+fn bench_mut_lookups_in_octree(tree: &mut Tree<ChuChunk, OctVec>, depth:u8) {
     let mut rng = SmallRng::seed_from_u64(42);
     for _ in 0..N_LOOKUPS {
-        let (min, max) = generate_area_bounds(&mut rng);
-        for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, 4) {
+        let (min, max) = generate_area_bounds(&mut rng, depth);
+        for i in tree.iter_all_chunks_in_bounds_and_tree_mut(min, max, min.depth) {
             i.1.material_index += 1;
             i.1.a_index += 1;
             i.1.b_index += 1;
@@ -91,7 +90,7 @@ pub fn bench_iteration(c: &mut Criterion) {
     let mut group = c.benchmark_group("mutable iteration");
     let mut samples_num = 100;
 
-    for depth in [4u8, 6, 8, 10].iter() {
+    for depth in [4u8, 6, 8].iter() {
         if *depth as i8 == 4 {
             samples_num = 100;
         }
@@ -107,7 +106,7 @@ pub fn bench_iteration(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(depth), depth, |b, depth| {
             let mut tree = create_and_fill_octree::<ChuChunk>(num_chunks, *depth);
             b.iter(|| {
-                bench_mut_lookups_in_octree(&mut tree);
+                bench_mut_lookups_in_octree(&mut tree, *depth);
             });
             black_box(tree);
         });
@@ -117,7 +116,7 @@ pub fn bench_iteration(c: &mut Criterion) {
     let mut group = c.benchmark_group("immutable iteration");
     let mut samples_num = 10;
 
-    for depth in [4u8, 6, 8, 10].iter() {
+    for depth in [4u8, 6, 8].iter() {
         if *depth as i8 == 4 {
             samples_num = 100;
         }
@@ -132,7 +131,7 @@ pub fn bench_iteration(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(depth), depth, |b, depth| {
             let tree = create_and_fill_octree::<ChuChunk>(num_chunks, *depth);
             b.iter(|| {
-                bench_lookups_in_octree(&tree);
+                bench_lookups_in_octree(&tree, *depth);
             });
         });
     }
