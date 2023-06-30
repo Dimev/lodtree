@@ -3,12 +3,13 @@
 
 /// trait for defining a Level of Detail vector.
 /// such a vector contains the current position in the octree (3d coords), as well as the lod level it's at, in integer coords.
-pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default {
+pub trait LodVec:
+    std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + Default + PartialOrd + std::fmt::Debug
+{
     /// gets one of the child node position of this node, defined by it's index.
-    fn get_child(self, index: usize) -> Self;
-
-    /// get the number of child nodes a node can have in the tree.
-    fn num_children() -> usize;
+    fn get_child(self, index: u32) -> Self;
+    /// the number of child nodes a node can have in the tree.
+    const NUM_CHILDREN: u32;
 
     /// returns the lod vector as if it's at the root of the tree.
     fn root() -> Self;
@@ -58,14 +59,15 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     /// }
     /// # }
     /// ```
-    fn can_subdivide(self, node: Self, detail: u64) -> bool;
+    fn can_subdivide(self, node: Self, detail: u32) -> bool;
 
     /// check if this chunk is inside of a bounding box
     /// where min is the lowest corner of the box, and max is the highest corner
     /// The implementation for QuadVec is as follows:
     /// ```rust
-    /// # struct Chunk { x: u64, y: u64, depth: u8 }
-    /// # impl Chunk {
+    /// struct Chunk { x: u64, y: u64, depth: u8 }
+    /// impl Chunk {
+    ///    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool{
     /// // get the lowest lod level
     /// let level = self.depth.min(min.depth.min(max.depth));
     ///
@@ -74,7 +76,7 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     /// let min_difference = min.depth - level;
     /// let max_difference = max.depth - level;
     ///
-    //// // get the coords to that level
+    /// // get the coords to that level
     /// let self_x = self.x >> self_difference;
     /// let self_y = self.y >> self_difference;
     ///
@@ -85,14 +87,15 @@ pub trait LodVec: std::hash::Hash + Eq + Sized + Copy + Clone + Send + Sync + De
     /// let max_y = max.y >> max_difference;
     ///
     /// // then check if we are inside the AABB
-    /// self.depth as u64 <= max_depth
-    /// 	&& self_x >= min_x
-    /// 	&& self_x < max_x
-    /// 	&& self_y >= min_y
-    /// 	&& self_y < max_y
-    /// # }
+    /// self.depth  <= max_depth
+    ///     && self_x >= min_x
+    ///     && self_x < max_x
+    ///     && self_y >= min_y
+    ///     && self_y < max_y
+    /// }
+    /// }
     /// ```
-    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u64) -> bool;
+    fn is_inside_bounds(self, min: Self, max: Self, max_depth: u8) -> bool;
 
     /// Wether this node contains a child node
     fn contains_child_node(self, child: Self) -> bool;

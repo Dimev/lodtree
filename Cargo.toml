@@ -1,13 +1,14 @@
 [package]
 name = "lodtree"
 description = "A simple crate to help create octrees and quadtrees for chunked level of detail"
-version = "0.1.4"
-edition = "2018"
+version = "0.1.5"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Dimev/lodtree"
 documentation = "https://docs.rs/lodtree"
 keywords = ["lod", "terrain", "octree", "quadtree", "tree"]
 categories = ["data-structures"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +17,10 @@ categories = ["data-structures"]
 [dev_dependencies]
 rayon = "1.5"
 glium = "0.30"
+rand ={version="0.8.5", features=['small_rng']}
+rand_derive = "0.5.0"
+criterion = {version="0.3", features=['html_reports']}
+
+[[bench]]
+name = "iterators"
+harness = false
